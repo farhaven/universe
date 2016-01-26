@@ -24,6 +24,7 @@ const (
 const (
 	CAMERA_TURN = iota
 	CAMERA_MOVE
+	CAMERA_DROP
 )
 type CameraCommand struct {
 	Type int
@@ -92,6 +93,8 @@ func (c *Camera) handleCommands() {
 				c.x += float64(cmd.X) * math.Cos((c.theta + math.Pi / 2))
 				c.y += float64(cmd.X) * math.Sin((c.theta + math.Pi / 2))
 			}
+		case CAMERA_DROP:
+			c.z = 0
 		}
 	}
 }
@@ -335,6 +338,8 @@ func main() {
 				camera.queueCommand(CAMERA_MOVE, 1, 0)
 			case `D`:
 				camera.queueCommand(CAMERA_MOVE, -1, 0)
+			case `Space`:
+				camera.queueCommand(CAMERA_DROP, 0, 0)
 			case `Left`:
 				camera.queueCommand(CAMERA_TURN, 10, 0)
 			case `Right`:
