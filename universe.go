@@ -112,8 +112,6 @@ func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
 		log.Fatalf(`can't create window: %s`, err)
 	}
 
-	log.Printf(`sdl win: %v, renderer: %v`, w, r)
-
 	if gl.Init() != 0 {
 		log.Fatalln(`can't init GL`)
 	}
@@ -273,14 +271,6 @@ func main() {
 		log.Fatalf(`SDL Init failed: %s`, err)
 	}
 	defer sdl.Quit()
-	n, err := sdl.GetNumVideoDrivers()
-	if err != nil {
-		log.Fatalf(`can't get number of video drivers: %s`, err)
-	}
-	log.Printf(`got %d video drivers`, n)
-	for i := 0; i < n; i++ {
-		log.Printf(`driver %d: %s`, i, sdl.GetVideoDriver(i))
-	}
 	if err := sdl.VideoInit(sdl.GetVideoDriver(0)); err != nil {
 		log.Fatalf(`can't init video: %s`, err)
 	}
