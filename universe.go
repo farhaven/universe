@@ -161,13 +161,13 @@ func drawGrid() {
 func createHudSurface(fnt *ttf.Font, cam *Camera) *sdl.Surface {
 	color := sdl.Color{0, 255, 255, 255}
 
-	srf_angles, err := fnt.RenderUTF8_Solid(fmt.Sprintf(`α: %0.2f θ: %0.2f`, cam.alpha, cam.theta), color)
+	srf_angles, err := fnt.RenderUTF8_Blended(fmt.Sprintf(`α: %0.2f θ: %0.2f`, cam.alpha, cam.theta), color)
 	if err != nil {
 		log.Fatalf(`can't render text: %s`, err)
 	}
 	defer srf_angles.Free()
 
-	srf_pos, err := fnt.RenderUTF8_Solid(fmt.Sprintf(`x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z), color)
+	srf_pos, err := fnt.RenderUTF8_Blended(fmt.Sprintf(`x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z), color)
 	if err != nil {
 		log.Fatalf(`can't render text: %s`, err)
 	}
@@ -280,7 +280,7 @@ func main() {
 		log.Fatalf(`can't init font system: %s`, err)
 	}
 
-	fnt, err := ttf.OpenFont("font.ttf", 10)
+	fnt, err := ttf.OpenFont("font.ttf", 12)
 	if err != nil {
 		log.Fatalf(`can't load font.ttf: %s`, err)
 	}
