@@ -2,20 +2,13 @@ package main
 
 import (
 	"log"
-	// "os"
 	"runtime"
 	"math"
 
-	// "github.com/banthar/Go-SDL/sdl"
 	"github.com/veandco/go-sdl2/sdl"
-	/*
-	"github.com/banthar/Go-SDL/ttf"
-	"github.com/go-gl-legacy/glh"
-	*/
 	"github.com/go-gl/gl"
 	"github.com/go-gl/glu"
 	/*
-	"github.com/krasin/stl"
 	"github.com/lucasb-eyer/go-colorful"
 	*/
 )
