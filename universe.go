@@ -107,7 +107,7 @@ func getNameFromKeysym(k sdl.Keysym) string {
 }
 
 func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
-	w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL | sdl.WINDOW_INPUT_GRABBED)
+	w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL | sdl.WINDOW_INPUT_GRABBED | sdl.WINDOW_FULLSCREEN)
 	if err != nil {
 		log.Fatalf(`can't create window: %s`, err)
 	}
@@ -285,7 +285,13 @@ func main() {
 		log.Fatalf(`can't load font.ttf: %s`, err)
 	}
 
-	width, height := 800, 600
+	var mode sdl.DisplayMode
+	if err := sdl.GetDesktopDisplayMode(0, &mode); err != nil {
+		log.Fatalf(`can't get display mode: %s`, err)
+	}
+	log.Printf(`%v`, mode)
+
+	width, height := int(mode.W), int(mode.H)
 	yoff := float64(height) / 2
 
 	camera := NewCamera(width, height, -5, 0)
