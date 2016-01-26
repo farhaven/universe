@@ -1,21 +1,21 @@
 package main
 
 import (
-	"log"
 	"fmt"
-	"runtime"
+	"log"
 	"math"
+	"runtime"
 
-	"github.com/veandco/go-sdl2/sdl"
-	ttf "github.com/veandco/go-sdl2/sdl_ttf"
 	"github.com/go-gl/gl"
 	"github.com/go-gl/glu"
+	"github.com/veandco/go-sdl2/sdl"
+	ttf "github.com/veandco/go-sdl2/sdl_ttf"
 	/*
-	"github.com/lucasb-eyer/go-colorful"
-	*/
-)
+		"github.com/lucasb-eyer/go-colorful"
+	*/)
 
 type DrawCommand int
+
 const (
 	DRAW_QUIT = iota
 	DRAW_FULLSCREEN
@@ -26,10 +26,11 @@ const (
 	CAMERA_MOVE
 	CAMERA_DROP
 )
+
 type CameraCommand struct {
 	Type int
-	X int32
-	Y int32
+	X    int32
+	Y    int32
 }
 type Camera struct {
 	cmds chan CameraCommand
@@ -47,7 +48,7 @@ type Camera struct {
 
 func NewCamera(width, height int, x, y float64) *Camera {
 	c := &Camera{
-		cmds: make(chan CameraCommand),
+		cmds:    make(chan CameraCommand),
 		screenw: width, screenh: height,
 		x: x, y: y,
 	}
@@ -61,9 +62,9 @@ func (c *Camera) Update() {
 	ratio := float64(c.screenw) / float64(c.screenh)
 	glu.Perspective(60, ratio, 0.5, float64(c.screenw))
 
-	vx := math.Cos(c.theta) * 10 + c.x
-	vy := math.Sin(c.theta) * 10 + c.y
-	vz := math.Sin(c.alpha) * 10 + c.z
+	vx := math.Cos(c.theta)*10 + c.x
+	vy := math.Sin(c.theta)*10 + c.y
+	vz := math.Sin(c.alpha)*10 + c.z
 
 	glu.LookAt(c.x, c.y, c.z, vx, vy, vz, 0, 0, 1)
 }
@@ -77,12 +78,12 @@ func (c *Camera) handleCommands() {
 				for c.theta < 0 {
 					c.theta += 2 * math.Pi
 				}
-				for c.theta > 2 * math.Pi {
+				for c.theta > 2*math.Pi {
 					c.theta -= 2 * math.Pi
 				}
 			} else if cmd.Y != 0 {
 				h := float64(c.screenh) / 2
-				c.alpha = (float64(int32(c.screenh) - cmd.Y) - h) / h * math.Pi / 4
+				c.alpha = (float64(int32(c.screenh)-cmd.Y) - h) / h * math.Pi / 4
 			}
 		case CAMERA_MOVE:
 			if cmd.Y != 0 {
@@ -90,8 +91,8 @@ func (c *Camera) handleCommands() {
 				c.y += float64(cmd.Y) * math.Sin(c.theta)
 				c.z += float64(cmd.Y) * math.Sin(c.alpha)
 			} else if cmd.X != 0 {
-				c.x += float64(cmd.X) * math.Cos((c.theta + math.Pi / 2))
-				c.y += float64(cmd.X) * math.Sin((c.theta + math.Pi / 2))
+				c.x += float64(cmd.X) * math.Cos((c.theta + math.Pi/2))
+				c.y += float64(cmd.X) * math.Sin((c.theta + math.Pi/2))
 			}
 		case CAMERA_DROP:
 			c.z = 0
@@ -99,7 +100,7 @@ func (c *Camera) handleCommands() {
 	}
 }
 func (c *Camera) queueCommand(type_ int, x, y int32) {
-	c.cmds <-CameraCommand{ type_, x, y }
+	c.cmds <- CameraCommand{type_, x, y}
 }
 
 func getNameFromKeysym(k sdl.Keysym) string {
@@ -107,7 +108,7 @@ func getNameFromKeysym(k sdl.Keysym) string {
 }
 
 func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
-	w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL | sdl.WINDOW_INPUT_GRABBED | sdl.WINDOW_FULLSCREEN)
+	w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL|sdl.WINDOW_INPUT_GRABBED|sdl.WINDOW_FULLSCREEN)
 	if err != nil {
 		log.Fatalf(`can't create window: %s`, err)
 	}
@@ -123,24 +124,24 @@ func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
 
 func drawSphere(radius float64, lat, lon int) {
 	for i := 0; i <= lat; i++ {
-		lat0 := math.Pi * (-0.5 + float64(i - 1) / float64(lat))
+		lat0 := math.Pi * (-0.5 + float64(i-1)/float64(lat))
 		z0 := math.Sin(lat0)
 		zr0 := math.Cos(lat0)
 
-		lat1 := math.Pi * (-0.5 + float64(i) / float64(lat))
+		lat1 := math.Pi * (-0.5 + float64(i)/float64(lat))
 		z1 := math.Sin(lat1)
 		zr1 := math.Cos(lat1)
 
 		gl.Begin(gl.QUAD_STRIP)
 		for j := 0; j <= lon; j++ {
-			lng := 2 * math.Pi * (float64(j - 1) / float64(lon))
+			lng := 2 * math.Pi * (float64(j-1) / float64(lon))
 			x := math.Cos(lng)
 			y := math.Sin(lng)
 
-			gl.Normal3f(float32(x * zr0), float32(y * zr0), float32(z0))
-			gl.Vertex3f(float32(x * zr0), float32(y * zr0), float32(z0))
-			gl.Normal3f(float32(x * zr1), float32(y * zr1), float32(z1))
-			gl.Vertex3f(float32(x * zr1), float32(y * zr1), float32(z1))
+			gl.Normal3f(float32(x*zr0), float32(y*zr0), float32(z0))
+			gl.Vertex3f(float32(x*zr0), float32(y*zr0), float32(z0))
+			gl.Normal3f(float32(x*zr1), float32(y*zr1), float32(z1))
+			gl.Vertex3f(float32(x*zr1), float32(y*zr1), float32(z1))
 		}
 		gl.End()
 	}
@@ -341,10 +342,10 @@ func main() {
 			case `Right`:
 				camera.queueCommand(CAMERA_TURN, -10, 0)
 			case `Up`:
-				yoff = math.Min(yoff + 10, float64(height))
+				yoff = math.Min(yoff+10, float64(height))
 				camera.queueCommand(CAMERA_TURN, 0, int32(yoff))
 			case `Down`:
-				yoff = math.Max(yoff - 10, 0)
+				yoff = math.Max(yoff-10, 0)
 				camera.queueCommand(CAMERA_TURN, 0, int32(yoff))
 			default:
 				log.Printf(`key press: %v %s`, e.Type, getNameFromKeysym(e.Keysym))
