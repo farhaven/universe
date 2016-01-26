@@ -83,7 +83,6 @@ func (c *Camera) handleCommands() {
 				h := float64(c.screenh) / 2
 				c.alpha = (float64(int32(c.screenh) - cmd.Y) - h) / h * math.Pi / 4
 			}
-			log.Printf(`θ: %v α: %f`, c.theta, c.alpha)
 		case CAMERA_MOVE:
 			if cmd.Y != 0 {
 				c.x += float64(cmd.Y) * math.Cos(c.theta)
@@ -93,8 +92,6 @@ func (c *Camera) handleCommands() {
 				c.x += float64(cmd.X) * math.Cos((c.theta + math.Pi / 2))
 				c.y += float64(cmd.X) * math.Sin((c.theta + math.Pi / 2))
 			}
-
-			log.Printf(`x: %f y: %f`, c.x, c.y)
 		}
 	}
 }
@@ -160,11 +157,35 @@ func drawGrid() {
 	}
 }
 
-func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, cam *Camera) {
-	srf, err := fnt.RenderUTF8_Solid(fmt.Sprintf(`a: XXX t: YYY`), sdl.Color{255, 255, 255, 255})
+func createHudSurface(fnt *ttf.Font, cam *Camera) *sdl.Surface {
+	color := sdl.Color{0, 255, 255, 255}
+
+	srf_angles, err := fnt.RenderUTF8_Solid(fmt.Sprintf(`α: %0.2f θ: %0.2f`, cam.alpha, cam.theta), color)
 	if err != nil {
 		log.Fatalf(`can't render text: %s`, err)
 	}
+	defer srf_angles.Free()
+
+	srf_pos, err := fnt.RenderUTF8_Solid(fmt.Sprintf(`x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z), color)
+	if err != nil {
+		log.Fatalf(`can't render text: %s`, err)
+	}
+	defer srf_pos.Free()
+
+	w := int32(math.Max(float64(srf_angles.W), float64(srf_pos.W)))
+	h := srf_angles.H + srf_pos.H
+	fmt := srf_angles.Format
+
+	srf, err := sdl.CreateRGBSurface(0, w, h, 32, fmt.Rmask, fmt.Gmask, fmt.Bmask, fmt.Amask)
+	srf.FillRect(nil, sdl.MapRGBA(srf.Format, 0, 0, 0, 255))
+	srf_angles.Blit(nil, srf, &sdl.Rect{W: srf_angles.W, H: srf_angles.H})
+	srf_pos.Blit(nil, srf, &sdl.Rect{Y: srf_angles.H, W: srf_pos.W, H: srf_pos.H})
+
+	return srf
+}
+
+func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, cam *Camera) {
+	srf := createHudSurface(fnt, cam)
 	defer srf.Free()
 
 	txt, err := r.CreateTextureFromSurface(srf)
