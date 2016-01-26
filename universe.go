@@ -2,10 +2,12 @@ package main
 
 import (
 	"log"
+	"fmt"
 	"runtime"
 	"math"
 
 	"github.com/veandco/go-sdl2/sdl"
+	ttf "github.com/veandco/go-sdl2/sdl_ttf"
 	"github.com/go-gl/gl"
 	"github.com/go-gl/glu"
 	/*
@@ -67,7 +69,6 @@ func (c *Camera) Update() {
 
 func (c *Camera) handleCommands() {
 	for cmd := range c.cmds {
-		log.Printf(`got camera command %v`, cmd)
 		switch cmd.Type {
 		case CAMERA_TURN:
 			if cmd.X != 0 {
@@ -159,7 +160,47 @@ func drawGrid() {
 	}
 }
 
-func drawScreen(width, height int, cam *Camera, commands chan DrawCommand) {
+func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, cam *Camera) {
+	srf, err := fnt.RenderUTF8_Solid(fmt.Sprintf(`a: XXX t: YYY`), sdl.Color{255, 255, 255, 255})
+	if err != nil {
+		log.Fatalf(`can't render text: %s`, err)
+	}
+	defer srf.Free()
+
+	txt, err := r.CreateTextureFromSurface(srf)
+	if err != nil {
+		log.Fatalf(`can't create texture from text surface: %s`, err)
+	}
+
+	gl.MatrixMode(gl.PROJECTION)
+	gl.PushMatrix()
+	gl.LoadIdentity()
+	gl.Ortho(0.0, float64(width), float64(height), 0.0, -1.0, 1.0)
+	gl.MatrixMode(gl.MODELVIEW)
+	gl.LoadIdentity()
+	gl.Clear(gl.DEPTH_BUFFER_BIT)
+
+	txt.GL_BindTexture(nil, nil)
+	defer txt.GL_UnbindTexture()
+
+	gl.Begin(gl.QUADS)
+	gl.TexCoord2f(0, 0)
+	gl.Vertex2f(0.0, 0.0)
+	gl.TexCoord2f(1, 0)
+	gl.Vertex2f(float32(srf.W), 0.0)
+	gl.TexCoord2f(1, 1)
+	gl.Vertex2f(float32(srf.W), float32(srf.H))
+	gl.TexCoord2f(0, 1)
+	gl.Vertex2f(0.0, float32(srf.H))
+	if err = r.Copy(txt, nil, &sdl.Rect{W: srf.W, H: srf.H}); err != nil {
+		log.Fatalf(`can't copy texture: %s`, err)
+	}
+	gl.End()
+
+	gl.PopMatrix()
+}
+
+func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan DrawCommand) {
 	/* SDL wants to run on the 'main thread' */
 	runtime.LockOSThread()
 
@@ -179,7 +220,7 @@ func drawScreen(width, height int, cam *Camera, commands chan DrawCommand) {
 		cam.Update()
 		drawGrid()
 		drawSphere(1.0, 10, 10)
-		// sdl.GL_SwapBuffers()
+		drawHud(width, height, fnt, r, cam)
 		r.Present()
 
 		select {
@@ -221,6 +262,15 @@ func main() {
 	}
 	defer sdl.VideoQuit()
 
+	if err := ttf.Init(); err != nil {
+		log.Fatalf(`can't init font system: %s`, err)
+	}
+
+	fnt, err := ttf.OpenFont("font.ttf", 10)
+	if err != nil {
+		log.Fatalf(`can't load font.ttf: %s`, err)
+	}
+
 	width, height := 800, 600
 	yoff := float64(height) / 2
 
@@ -228,7 +278,7 @@ func main() {
 	go camera.handleCommands()
 
 	draw_cmd := make(chan DrawCommand)
-	go drawScreen(width, height, camera, draw_cmd)
+	go drawScreen(width, height, fnt, camera, draw_cmd)
 
 	events := make(chan sdl.Event)
 	go func() {
@@ -243,7 +293,7 @@ func main() {
 		switch e := e.(type) {
 		default:
 			log.Printf(`event %T`, e)
-		case *sdl.WindowEvent:
+		case *sdl.WindowEvent, *sdl.KeyUpEvent, *sdl.TextInputEvent:
 			/* ignore */
 		case *sdl.MouseMotionEvent:
 			camera.queueCommand(CAMERA_TURN, int32(-e.XRel), int32(e.Y))
