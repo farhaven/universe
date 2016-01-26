@@ -146,6 +146,18 @@ func drawSphere(radius float64, lat, lon int) {
 	}
 }
 
+func drawGrid() {
+	for i := float32(-500); i <= 500; i += 5 {
+		gl.Begin(gl.LINES)
+		gl.Color3f(1.0, 1.0, 1.0)
+		gl.Vertex3f(-500, i, 0)
+		gl.Vertex3f(500, i, 0)
+		gl.Vertex3f(i, -500, 0)
+		gl.Vertex3f(i, 500, 0)
+		gl.End()
+	}
+}
+
 func drawScreen(width, height int, cam *Camera, commands chan DrawCommand) {
 	/* SDL wants to run on the 'main thread' */
 	runtime.LockOSThread()
@@ -164,6 +176,7 @@ func drawScreen(width, height int, cam *Camera, commands chan DrawCommand) {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		/* Do drawing */
 		cam.Update()
+		drawGrid()
 		drawSphere(1.0, 10, 10)
 		// sdl.GL_SwapBuffers()
 		r.Present()
