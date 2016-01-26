@@ -210,7 +210,7 @@ func main() {
 	width, height := 800, 600
 	yoff := float64(height) / 2
 
-	camera := NewCamera(width, height, 0, -5)
+	camera := NewCamera(width, height, -5, 0)
 	go camera.handleCommands()
 
 	draw_cmd := make(chan DrawCommand)
