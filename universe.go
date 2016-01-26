@@ -87,6 +87,7 @@ func (c *Camera) handleCommands() {
 			if cmd.Y != 0 {
 				c.x += float64(cmd.Y) * math.Cos(c.theta)
 				c.y += float64(cmd.Y) * math.Sin(c.theta)
+				c.z += float64(cmd.Y) * math.Sin(c.alpha)
 			} else if cmd.X != 0 {
 				c.x += float64(cmd.X) * math.Cos((c.theta + math.Pi / 2))
 				c.y += float64(cmd.X) * math.Sin((c.theta + math.Pi / 2))
