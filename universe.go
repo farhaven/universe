@@ -10,9 +10,7 @@ import (
 	"github.com/go-gl/glu"
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/sdl_ttf"
-	/*
-		"github.com/lucasb-eyer/go-colorful"
-	*/)
+)
 
 type DrawCommand int
 
