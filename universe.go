@@ -208,6 +208,7 @@ func main() {
 	defer sdl.VideoQuit()
 
 	width, height := 800, 600
+	yoff := float64(height) / 2
 
 	camera := NewCamera(width, height, 0, -5)
 	go camera.handleCommands()
@@ -249,6 +250,16 @@ func main() {
 				camera.queueCommand(CAMERA_MOVE, 1, 0)
 			case `D`:
 				camera.queueCommand(CAMERA_MOVE, -1, 0)
+			case `Left`:
+				camera.queueCommand(CAMERA_TURN, 10, 0)
+			case `Right`:
+				camera.queueCommand(CAMERA_TURN, -10, 0)
+			case `Up`:
+				yoff = math.Min(yoff + 10, float64(height))
+				camera.queueCommand(CAMERA_TURN, 0, int32(yoff))
+			case `Down`:
+				yoff = math.Max(yoff - 10, 0)
+				camera.queueCommand(CAMERA_TURN, 0, int32(yoff))
 			default:
 				log.Printf(`key press: %v %s`, e.Type, getNameFromKeysym(e.Keysym))
 			}
