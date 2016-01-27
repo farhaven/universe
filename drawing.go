@@ -33,6 +33,7 @@ func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
 	}
 
 	gl.ClearColor(0.1, 0.1, 0.1, 0.1)
+	gl.Enable(gl.DEPTH_TEST)
 
 	return w, r
 }
@@ -89,6 +90,9 @@ func drawUnitSphere(lat, lon int, wireframe bool) {
 }
 
 func drawGrid() {
+	gl.Disable(gl.DEPTH_TEST)
+	defer gl.Enable(gl.DEPTH_TEST)
+
 	for i := float32(-500); i <= 500; i += 5 {
 		gl.Begin(gl.LINES)
 		gl.Color3f(0.2, 0.2, 0.2)
