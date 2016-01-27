@@ -71,35 +71,50 @@ func drawGrid() {
 	}
 }
 
-func createHudSurface(fnt *ttf.Font, cam *Camera) *sdl.Surface {
+func createHudSurface(fnt *ttf.Font, fps int64, cam *Camera) *sdl.Surface {
 	color := sdl.Color{0, 255, 255, 255}
 
-	srf_angles, err := fnt.RenderUTF8_Blended(fmt.Sprintf(`α: %0.2f θ: %0.2f`, cam.alpha, cam.theta), color)
-	if err != nil {
-		log.Fatalf(`can't render text: %s`, err)
+	lines := []string{
+		fmt.Sprintf(`α: %0.2f θ: %0.2f`, cam.alpha, cam.theta),
+		fmt.Sprintf(`x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z),
+		fmt.Sprintf(`FPS: %d`, fps),
 	}
-	defer srf_angles.Free()
 
-	srf_pos, err := fnt.RenderUTF8_Blended(fmt.Sprintf(`x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z), color)
-	if err != nil {
-		log.Fatalf(`can't render text: %s`, err)
+	w, h := int32(0), int32(0)
+	surfaces := []*sdl.Surface{}
+	for _, l := range lines {
+		s, err := fnt.RenderUTF8_Blended(l, color)
+		if err != nil {
+			log.Fatalf(`can't render text: %s`, err)
+		}
+		defer s.Free()
+		surfaces = append(surfaces, s)
+
+		if s.W > w {
+			w = s.W
+		}
+		h += s.H
 	}
-	defer srf_pos.Free()
 
-	w := int32(math.Max(float64(srf_angles.W), float64(srf_pos.W)))
-	h := srf_angles.H + srf_pos.H
-	fmt := srf_angles.Format
+	fmt := surfaces[0].Format
 
 	srf, err := sdl.CreateRGBSurface(0, w, h, 32, fmt.Rmask, fmt.Gmask, fmt.Bmask, fmt.Amask)
+	if err != nil {
+		log.Fatalf(`can't create SDL surface: %s`, err)
+	}
 	srf.FillRect(nil, sdl.MapRGBA(srf.Format, 0, 0, 0, 255))
-	srf_angles.Blit(nil, srf, &sdl.Rect{W: srf_angles.W, H: srf_angles.H})
-	srf_pos.Blit(nil, srf, &sdl.Rect{Y: srf_angles.H, W: srf_pos.W, H: srf_pos.H})
+
+	y := int32(0)
+	for _, s := range surfaces {
+		s.Blit(nil, srf, &sdl.Rect{Y: y, W: s.W, H: s.H})
+		y += s.H
+	}
 
 	return srf
 }
 
-func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, cam *Camera) {
-	srf := createHudSurface(fnt, cam)
+func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, fps int64, cam *Camera) {
+	srf := createHudSurface(fnt, fps, cam)
 	defer srf.Free()
 
 	txt, err := r.CreateTextureFromSurface(srf)
@@ -149,13 +164,18 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 	gl.LoadIdentity()
 	gl.Translatef(0, 0, 0)
 
+	target_fps := 24
+	ticks_per_frame := int64(1000 / target_fps)
+	fps := int64(0)
+
 	for {
+		ticks_start := sdl.GetTicks()
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		/* Do drawing */
 		cam.Update()
 		drawGrid()
 		drawSphere(1.0, 10, 10)
-		drawHud(width, height, fnt, r, cam)
+		drawHud(width, height, fnt, r, fps, cam)
 		r.Present()
 
 		select {
@@ -175,6 +195,14 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 			/* ignore */
 		}
 
-		sdl.Delay(1)
+		tickdelta := int64(sdl.GetTicks()) - int64(ticks_start)
+		if tickdelta < 0 {
+			tickdelta = 1
+		}
+		tickdelta = ticks_per_frame - tickdelta
+
+		fps = 1000 / tickdelta
+
+		sdl.Delay(uint32(tickdelta))
 	}
 }
