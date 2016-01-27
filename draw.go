@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math"
-	"fmt"
 	"runtime"
 
 	"github.com/go-gl/gl"
@@ -177,4 +177,3 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 		sdl.Delay(1)
 	}
 }
-

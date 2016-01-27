@@ -1,9 +1,9 @@
 package main
 
 import (
-	"math"
 	"github.com/go-gl/gl"
 	"github.com/go-gl/glu"
+	"math"
 )
 
 const (
@@ -86,4 +86,3 @@ func (c *Camera) handleCommands() {
 func (c *Camera) queueCommand(type_ int, x, y int32) {
 	c.cmds <- CameraCommand{type_, x, y}
 }
-
