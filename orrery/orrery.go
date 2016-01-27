@@ -53,7 +53,7 @@ func (o *Orrery) Step() {
 }
 
 func (o *Orrery) SpawnPlanet(x, y, z float64) {
-	o.Planets = append(o.Planets, &Planet{R: 1.0, Pos: vector.V3{x, y, z}})
+	o.Planets = append(o.Planets, &Planet{R: 1.0, M: 1, Pos: vector.V3{x, y, z}})
 }
 
 func New () *Orrery {
