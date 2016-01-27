@@ -207,7 +207,7 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, o *orrery.Orrery,
 
 	for {
 		ticks_start := sdl.GetTicks()
-		o.StepPlanets()
+		o.Step()
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		cam.Update()

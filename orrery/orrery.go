@@ -42,7 +42,7 @@ func (p *Planet) affectGravity(o *Orrery) {
 	}
 }
 
-func (o *Orrery) StepPlanets() {
+func (o *Orrery) Step() {
 	for _, p := range o.Planets {
 		p.affectGravity(o)
 	}
