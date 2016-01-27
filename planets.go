@@ -35,6 +35,7 @@ func (v *Vector3) length() float64 {
 
 type Planet struct {
 	r   float64
+	m   float64
 	pos Vector3
 	vel Vector3
 }
@@ -74,7 +75,7 @@ func (p *Planet) affectGravity() {
 
 		d := math.Max(1, v.length())
 
-		M := p.r + px.r
+		M := p.m + px.m
 		a := (G * M) / (d * d)
 
 		v.scale(a/v.length())
@@ -105,8 +106,8 @@ func spawnPlanet(x, y, z float64) {
 
 func setupPlanets() {
 	planets = []*Planet{
-		&Planet{r: 1.0, pos: Vector3{x: 30, y: 30}, vel: Vector3{x: -0.2, y: -0.2}},
-		&Planet{r: 30.0},
+		&Planet{r: 30.0, m: 500.972}, // Earth
+		&Planet{r: 5, m: 7.3459, pos: Vector3{x: 400}, vel: Vector3{y: 0.1}}, // Moon
 	}
 
 	go stepPlanets()
