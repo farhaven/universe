@@ -34,6 +34,7 @@ func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
 }
 
 func drawSphere(radius float64, lat, lon int) {
+	gl.Color3f(1, 1, 1)
 	for i := 0; i <= lat; i++ {
 		lat0 := math.Pi * (-0.5 + float64(i-1)/float64(lat))
 		z0 := math.Sin(lat0)
@@ -61,7 +62,7 @@ func drawSphere(radius float64, lat, lon int) {
 func drawGrid() {
 	for i := float32(-500); i <= 500; i += 5 {
 		gl.Begin(gl.LINES)
-		gl.Color3f(1.0, 1.0, 1.0)
+		gl.Color3f(0.2, 0.2, 0.2)
 		gl.Vertex3f(-500, i, 0)
 		gl.Vertex3f(500, i, 0)
 		gl.Vertex3f(i, -500, 0)
