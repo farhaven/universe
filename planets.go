@@ -72,12 +72,12 @@ func (p *Planet) affectGravity() {
 		v := Vector3{ px.pos.x, px.pos.y, px.pos.z }
 		v.sub(p.pos)
 
-		d := v.length() + 1
+		d := math.Max(1, v.length())
 
 		M := p.r + px.r
 		a := (G * M) / (d * d)
 
-		v.scale(a/d)
+		v.scale(a/v.length())
 
 		p.vel.add(v)
 		px.vel.sub(v)
