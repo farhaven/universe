@@ -59,6 +59,8 @@ func main() {
 			log.Printf(`event %T`, e)
 		case *sdl.WindowEvent, *sdl.KeyUpEvent, *sdl.TextInputEvent:
 			/* ignore */
+		case *sdl.MouseWheelEvent:
+			camera.queueCommand(CAMERA_MOVE, 0, -e.Y)
 		case *sdl.MouseMotionEvent:
 			camera.queueCommand(CAMERA_TURN, int32(-e.XRel), int32(e.Y))
 		case *sdl.MouseButtonEvent:
