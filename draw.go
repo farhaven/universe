@@ -33,8 +33,7 @@ func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
 	return w, r
 }
 
-func drawSphere(radius float64, lat, lon int) {
-	gl.Color3f(1, 1, 1)
+func drawUnitSphere(lat, lon int) {
 	for i := 0; i <= lat; i++ {
 		lat0 := math.Pi * (-0.5 + float64(i-1)/float64(lat))
 		z0 := math.Sin(lat0)
@@ -133,6 +132,7 @@ func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, fps int64, cam *
 	txt.GL_BindTexture(nil, nil)
 	defer txt.GL_UnbindTexture()
 
+	gl.Color3f(1, 1, 1)
 	gl.Begin(gl.QUADS)
 	gl.TexCoord2f(0, 0)
 	gl.Vertex2f(0.0, 0.0)
@@ -171,10 +171,9 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 	for {
 		ticks_start := sdl.GetTicks()
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		/* Do drawing */
 		cam.Update()
 		drawGrid()
-		drawSphere(1.0, 10, 10)
+		drawPlanets()
 		drawHud(width, height, fnt, r, fps, cam)
 		r.Present()
 

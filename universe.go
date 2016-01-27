@@ -39,6 +39,8 @@ func main() {
 	width, height := int(mode.W), int(mode.H)
 	yoff := float64(height) / 2
 
+	setupPlanets()
+
 	camera := NewCamera(width, height, -5, 0)
 	sdl.SetRelativeMouseMode(true)
 	go camera.handleCommands()
