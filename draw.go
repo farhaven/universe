@@ -170,6 +170,8 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 
 	for {
 		ticks_start := sdl.GetTicks()
+		stepPlanets()
+
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		cam.Update()
 		drawGrid()
