@@ -6,9 +6,12 @@ import (
 	"math"
 	"runtime"
 
+	"./orrery"
+
 	"github.com/go-gl/gl"
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/sdl_ttf"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 type DrawCommand int
@@ -32,6 +35,28 @@ func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
 	gl.ClearColor(0.1, 0.1, 0.1, 0.1)
 
 	return w, r
+}
+
+func drawPlanets(o *orrery.Orrery, wireframe bool) {
+	for _, p := range o.Planets {
+		drawPlanet(p, wireframe)
+	}
+}
+
+func drawPlanet(p *orrery.Planet, wireframe bool) {
+	c := colorful.Hcl(math.Remainder((math.Pi / p.M)*360, 360), 0.9, 0.9)
+
+	gl.MatrixMode(gl.MODELVIEW)
+	gl.PushMatrix()
+
+	gl.Translated(p.Pos.X, p.Pos.Y, p.Pos.Z)
+	gl.Scaled(p.R, p.R, p.R)
+
+	gl.Color3f(float32(c.R), float32(c.G), float32(c.B))
+
+	drawUnitSphere(10, 10, wireframe)
+
+	gl.PopMatrix()
 }
 
 func drawUnitSphere(lat, lon int, wireframe bool) {
@@ -75,7 +100,7 @@ func drawGrid() {
 	}
 }
 
-func createHudSurface(fnt *ttf.Font, planets []*Planet, fps int64, cam *Camera) *sdl.Surface {
+func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, fps int64, cam *Camera) *sdl.Surface {
 	color := sdl.Color{0, 255, 255, 255}
 
 	lines := []string{
@@ -86,8 +111,8 @@ func createHudSurface(fnt *ttf.Font, planets []*Planet, fps int64, cam *Camera) 
 		fmt.Sprintf(` FPS: %d`, fps),
 	}
 
-	for i, p := range planets {
-		l := fmt.Sprintf(` π %d: r=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.r, p.pos.x, p.pos.y, p.pos.z, p.vel.x, p.vel.y, p.vel.z)
+	for i, p := range o.Planets {
+		l := fmt.Sprintf(` π %d: r=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.R, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z)
 		lines = append(lines, l)
 	}
 
@@ -124,8 +149,8 @@ func createHudSurface(fnt *ttf.Font, planets []*Planet, fps int64, cam *Camera) 
 	return srf
 }
 
-func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, planets []*Planet, fps int64, cam *Camera) {
-	srf := createHudSurface(fnt, planets, fps, cam)
+func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, o *orrery.Orrery, fps int64, cam *Camera) {
+	srf := createHudSurface(fnt, o, fps, cam)
 	defer srf.Free()
 
 	txt, err := r.CreateTextureFromSurface(srf)
@@ -162,7 +187,7 @@ func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, planets []*Plane
 	gl.PopMatrix()
 }
 
-func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan DrawCommand) {
+func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, o *orrery.Orrery, commands chan DrawCommand) {
 	/* SDL wants to run on the 'main thread' */
 	runtime.LockOSThread()
 
@@ -182,13 +207,13 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 
 	for {
 		ticks_start := sdl.GetTicks()
-		stepPlanets()
+		o.StepPlanets()
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		cam.Update()
 		drawGrid()
-		drawPlanets(wireframe)
-		drawHud(width, height, fnt, r, planets, fps, cam)
+		drawPlanets(o, wireframe)
+		drawHud(width, height, fnt, r, o, fps, cam)
 		r.Present()
 
 		select {

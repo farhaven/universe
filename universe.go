@@ -4,6 +4,8 @@ import (
 	"log"
 	"math"
 
+	"./orrery"
+
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/sdl_ttf"
 )
@@ -39,14 +41,14 @@ func main() {
 	width, height := int(mode.W), int(mode.H)
 	yoff := float64(height) / 2
 
-	setupPlanets()
+	o := orrery.New()
 
 	camera := NewCamera(width, height, -40, 40, 10)
 	sdl.SetRelativeMouseMode(true)
 	go camera.handleCommands()
 
 	draw_cmd := make(chan DrawCommand)
-	go drawScreen(width, height, fnt, camera, draw_cmd)
+	go drawScreen(width, height, fnt, camera, o, draw_cmd)
 
 	events := make(chan sdl.Event)
 	go func() {
@@ -71,7 +73,7 @@ func main() {
 			}
 			switch e.Button {
 			case 1:
-				spawnPlanet(camera.x, camera.y, camera.z)
+				o.SpawnPlanet(camera.x, camera.y, camera.z)
 			}
 		case *sdl.KeyDownEvent:
 			switch getNameFromKeysym(e.Keysym) {
