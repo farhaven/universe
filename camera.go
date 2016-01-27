@@ -1,8 +1,7 @@
 package main
 
 import (
-	"github.com/go-gl/gl"
-	"github.com/go-gl/glu"
+	"github.com/go-gl-legacy/gl"
 	"math"
 )
 
@@ -39,18 +38,68 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 	}
 	return c
 }
+
+type Vector3 [3]float64
+func (v *Vector3) length() float64 {
+	return math.Sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+}
+func (v *Vector3) cross(o Vector3) Vector3 {
+	return Vector3{
+		v[1] * o[2] - o[1] * v[2],
+		o[0] * v[2] - v[0] * o[2],
+		v[0] * o[1] - o[0] * v[1],
+	}
+}
+func (v *Vector3) normalize() {
+	l := v.length()
+	v[0] /= l
+	v[1] /= l
+	v[2] /= l
+}
+
+func (c *Camera) lookAt(at [3]float64) {
+	up := Vector3{0, 0, 1}
+
+	fw := Vector3{ at[0] - c.x, at[1] - c.y, at[2] - c.z }
+	fw.normalize()
+
+	side := fw.cross(up)
+	side.normalize()
+
+	up = side.cross(fw)
+	up.normalize()
+
+	m := [16]float64{
+		side[0], up[0], -fw[0], 0,
+		side[1], up[1], -fw[1], 0,
+		side[2], up[2], -fw[2], 0,
+		0, 0, 0, 1,
+	}
+
+	gl.MatrixMode(gl.MODELVIEW)
+	gl.LoadMatrixd(&m)
+	gl.Translated(-c.x, -c.y, -c.z)
+}
+
 func (c *Camera) Update() {
 	gl.MatrixMode(gl.PROJECTION)
 	gl.LoadIdentity()
 
-	ratio := float64(c.screenw) / float64(c.screenh)
-	glu.Perspective(60, ratio, 0.5, float64(c.screenw))
+	fovY := float64(60)
+	aspect := float64(c.screenw) / float64(c.screenh)
+	zNear := 0.5
+	zFar := float64(1024)
+
+	fH := math.Tan(fovY / 360 * math.Pi) * zNear
+	fW := fH * aspect
+
+	gl.Frustum(-fW, fW, -fH, fH, zNear, zFar)
 
 	vx := math.Cos(c.alpha)*10 + c.x
 	vy := math.Sin(c.alpha)*10 + c.y
 	vz := c.theta * 10 + c.z
 
-	glu.LookAt(c.x, c.y, c.z, vx, vy, vz, 0, 0, 1)
+	c.lookAt(Vector3{vx, vy, vz})
 }
 
 func (c *Camera) handleCommands() {

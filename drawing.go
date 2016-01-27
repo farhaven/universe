@@ -8,7 +8,7 @@ import (
 
 	"./orrery"
 
-	"github.com/go-gl/gl"
+	"github.com/go-gl-legacy/gl"
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/sdl_ttf"
 	"github.com/lucasb-eyer/go-colorful"
