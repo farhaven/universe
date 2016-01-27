@@ -41,7 +41,7 @@ func main() {
 
 	setupPlanets()
 
-	camera := NewCamera(width, height, -5, 0)
+	camera := NewCamera(width, height, -40, 40, 10)
 	sdl.SetRelativeMouseMode(true)
 	go camera.handleCommands()
 

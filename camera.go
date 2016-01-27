@@ -31,11 +31,11 @@ type Camera struct {
 	alpha float64
 }
 
-func NewCamera(width, height int, x, y float64) *Camera {
+func NewCamera(width, height int, x, y, z float64) *Camera {
 	c := &Camera{
 		cmds:    make(chan CameraCommand),
 		screenw: width, screenh: height,
-		x: x, y: y,
+		x: x, y: y, z: z,
 	}
 	return c
 }
