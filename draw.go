@@ -79,13 +79,15 @@ func createHudSurface(fnt *ttf.Font, planets []*Planet, fps int64, cam *Camera) 
 	color := sdl.Color{0, 255, 255, 255}
 
 	lines := []string{
-		fmt.Sprintf(`α: %0.2f θ: %0.2f`, cam.alpha, cam.theta),
-		fmt.Sprintf(`x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z),
-		fmt.Sprintf(`FPS: %d`, fps),
+		"WASD: Move, 1: Toggle wireframe, F: Fullscreen, Q: Quit",
+		"Mouse Wheel: Move fast",
+		fmt.Sprintf(` α: %0.2f θ: %0.2f`, cam.alpha, cam.theta),
+		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z),
+		fmt.Sprintf(` FPS: %d`, fps),
 	}
 
 	for i, p := range planets {
-		l := fmt.Sprintf(`p %d: pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.pos.x, p.pos.y, p.pos.z, p.vel.x, p.vel.y, p.vel.z)
+		l := fmt.Sprintf(` π %d: pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.pos.x, p.pos.y, p.pos.z, p.vel.x, p.vel.y, p.vel.z)
 		lines = append(lines, l)
 	}
 
