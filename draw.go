@@ -215,6 +215,9 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 			tickdelta = 1
 		}
 		tickdelta = ticks_per_frame - tickdelta
+		if tickdelta <= 0 {
+			tickdelta = 1
+		}
 
 		fps = 1000 / tickdelta
 
