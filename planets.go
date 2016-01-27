@@ -80,6 +80,7 @@ func (p *Planet) affectGravity() {
 		v.scale(a/d)
 
 		p.vel.add(v)
+		px.vel.sub(v)
 	}
 }
 
