@@ -70,13 +70,18 @@ func drawGrid() {
 	}
 }
 
-func createHudSurface(fnt *ttf.Font, fps int64, cam *Camera) *sdl.Surface {
+func createHudSurface(fnt *ttf.Font, planets []*Planet, fps int64, cam *Camera) *sdl.Surface {
 	color := sdl.Color{0, 255, 255, 255}
 
 	lines := []string{
 		fmt.Sprintf(`α: %0.2f θ: %0.2f`, cam.alpha, cam.theta),
 		fmt.Sprintf(`x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z),
 		fmt.Sprintf(`FPS: %d`, fps),
+	}
+
+	for i, p := range planets {
+		l := fmt.Sprintf(`p %d: pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.pos.x, p.pos.y, p.pos.z, p.vel.x, p.vel.y, p.vel.z)
+		lines = append(lines, l)
 	}
 
 	w, h := int32(0), int32(0)
@@ -112,8 +117,8 @@ func createHudSurface(fnt *ttf.Font, fps int64, cam *Camera) *sdl.Surface {
 	return srf
 }
 
-func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, fps int64, cam *Camera) {
-	srf := createHudSurface(fnt, fps, cam)
+func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, planets []*Planet, fps int64, cam *Camera) {
+	srf := createHudSurface(fnt, planets, fps, cam)
 	defer srf.Free()
 
 	txt, err := r.CreateTextureFromSurface(srf)
@@ -176,7 +181,7 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 		cam.Update()
 		drawGrid()
 		drawPlanets()
-		drawHud(width, height, fnt, r, fps, cam)
+		drawHud(width, height, fnt, r, planets, fps, cam)
 		r.Present()
 
 		select {
