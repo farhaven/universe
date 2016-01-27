@@ -73,7 +73,7 @@ func main() {
 			}
 			switch e.Button {
 			case 1:
-				o.SpawnPlanet(camera.x, camera.y, camera.z)
+				o.SpawnPlanet(camera.pos.X, camera.pos.Y, camera.pos.Z)
 			}
 		case *sdl.KeyDownEvent:
 			switch getNameFromKeysym(e.Keysym) {
