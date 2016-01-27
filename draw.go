@@ -87,7 +87,7 @@ func createHudSurface(fnt *ttf.Font, planets []*Planet, fps int64, cam *Camera) 
 	}
 
 	for i, p := range planets {
-		l := fmt.Sprintf(` π %d: pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.pos.x, p.pos.y, p.pos.z, p.vel.x, p.vel.y, p.vel.z)
+		l := fmt.Sprintf(` π %d: r=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.r, p.pos.x, p.pos.y, p.pos.z, p.vel.x, p.vel.y, p.vel.z)
 		lines = append(lines, l)
 	}
 
