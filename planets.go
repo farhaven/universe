@@ -29,6 +29,10 @@ func (v *Vector3) scale (n float64) {
 	v.z *= n
 }
 
+func (v *Vector3) scaled (n float64) Vector3 {
+	return Vector3{ v.x * n, v.y * n, v.z * n }
+}
+
 func (v *Vector3) length() float64 {
 	return math.Sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
 }
@@ -80,8 +84,7 @@ func (p *Planet) affectGravity() {
 
 		v.scale(a/v.length())
 
-		p.vel.add(v)
-		px.vel.sub(v)
+		p.vel.add(v.scaled(1/p.m))
 	}
 }
 
