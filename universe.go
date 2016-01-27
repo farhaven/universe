@@ -64,7 +64,7 @@ func main() {
 		case *sdl.MouseWheelEvent:
 			camera.queueCommand(CAMERA_MOVE, 0, -e.Y)
 		case *sdl.MouseMotionEvent:
-			camera.queueCommand(CAMERA_TURN, int32(-e.XRel), int32(e.Y))
+			camera.queueCommand(CAMERA_TURN, int32(-e.XRel), int32(e.YRel))
 		case *sdl.MouseButtonEvent:
 			log.Printf(`mouse button: %v`, e)
 		case *sdl.KeyDownEvent:

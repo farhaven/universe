@@ -54,20 +54,16 @@ func (c *Camera) Update() {
 }
 
 func (c *Camera) handleCommands() {
+	Pi2 := math.Pi / 2
 	for cmd := range c.cmds {
 		switch cmd.Type {
 		case CAMERA_TURN:
 			if cmd.X != 0 {
-				c.alpha += float64(cmd.X) / (float64(c.screenw) / (math.Pi / 2))
-				for c.alpha < 0 {
-					c.alpha += 2 * math.Pi
-				}
-				for c.alpha > 2*math.Pi {
-					c.alpha -= 2 * math.Pi
-				}
+				c.alpha += float64(cmd.X) / (float64(c.screenw) / Pi2)
+				c.alpha = math.Remainder(c.alpha, 2*math.Pi)
 			} else if cmd.Y != 0 {
-				h := float64(c.screenh) / 2
-				c.theta = ((float64(int32(c.screenh)-cmd.Y) - h) / h) * math.Pi / 2
+				c.theta -= float64(cmd.Y) / (float64(c.screenh) / Pi2)
+				c.theta = math.Max(-Pi2, math.Min(Pi2, c.theta))
 			}
 		case CAMERA_MOVE:
 			if cmd.Y != 0 {
@@ -75,8 +71,8 @@ func (c *Camera) handleCommands() {
 				c.y += float64(cmd.Y) * math.Sin(c.alpha)
 				c.z += float64(cmd.Y) * c.theta
 			} else if cmd.X != 0 {
-				c.x += float64(cmd.X) * math.Cos((c.alpha + math.Pi/2))
-				c.y += float64(cmd.X) * math.Sin((c.alpha + math.Pi/2))
+				c.x += float64(cmd.X) * math.Cos(c.alpha + Pi2)
+				c.y += float64(cmd.X) * math.Sin(c.alpha + Pi2)
 			}
 		case CAMERA_DROP:
 			c.z = 0
