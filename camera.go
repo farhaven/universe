@@ -27,8 +27,8 @@ type Camera struct {
 	y float64
 	z float64
 
-	alpha float64
 	theta float64
+	alpha float64
 }
 
 func NewCamera(width, height int, x, y float64) *Camera {
@@ -46,9 +46,9 @@ func (c *Camera) Update() {
 	ratio := float64(c.screenw) / float64(c.screenh)
 	glu.Perspective(60, ratio, 0.5, float64(c.screenw))
 
-	vx := math.Cos(c.theta)*10 + c.x
-	vy := math.Sin(c.theta)*10 + c.y
-	vz := math.Sin(c.alpha)*10 + c.z
+	vx := math.Cos(c.alpha)*10 + c.x
+	vy := math.Sin(c.alpha)*10 + c.y
+	vz := c.theta * 10 + c.z
 
 	glu.LookAt(c.x, c.y, c.z, vx, vy, vz, 0, 0, 1)
 }
@@ -58,25 +58,25 @@ func (c *Camera) handleCommands() {
 		switch cmd.Type {
 		case CAMERA_TURN:
 			if cmd.X != 0 {
-				c.theta += float64(cmd.X) / (float64(c.screenw) / (math.Pi / 2))
-				for c.theta < 0 {
-					c.theta += 2 * math.Pi
+				c.alpha += float64(cmd.X) / (float64(c.screenw) / (math.Pi / 2))
+				for c.alpha < 0 {
+					c.alpha += 2 * math.Pi
 				}
-				for c.theta > 2*math.Pi {
-					c.theta -= 2 * math.Pi
+				for c.alpha > 2*math.Pi {
+					c.alpha -= 2 * math.Pi
 				}
 			} else if cmd.Y != 0 {
 				h := float64(c.screenh) / 2
-				c.alpha = (float64(int32(c.screenh)-cmd.Y) - h) / h * math.Pi / 4
+				c.theta = ((float64(int32(c.screenh)-cmd.Y) - h) / h) * math.Pi / 2
 			}
 		case CAMERA_MOVE:
 			if cmd.Y != 0 {
-				c.x += float64(cmd.Y) * math.Cos(c.theta)
-				c.y += float64(cmd.Y) * math.Sin(c.theta)
-				c.z += float64(cmd.Y) * math.Sin(c.alpha)
+				c.x += float64(cmd.Y) * math.Cos(c.alpha)
+				c.y += float64(cmd.Y) * math.Sin(c.alpha)
+				c.z += float64(cmd.Y) * c.theta
 			} else if cmd.X != 0 {
-				c.x += float64(cmd.X) * math.Cos((c.theta + math.Pi/2))
-				c.y += float64(cmd.X) * math.Sin((c.theta + math.Pi/2))
+				c.x += float64(cmd.X) * math.Cos((c.alpha + math.Pi/2))
+				c.y += float64(cmd.X) * math.Sin((c.alpha + math.Pi/2))
 			}
 		case CAMERA_DROP:
 			c.z = 0
