@@ -41,7 +41,7 @@ type Planet struct {
 
 var planets []*Planet
 
-func (p *Planet) draw() {
+func (p *Planet) draw(wireframe bool) {
 	c := colorful.Hcl(p.r*180, 0.9, 0.9)
 
 	gl.MatrixMode(gl.MODELVIEW)
@@ -52,7 +52,7 @@ func (p *Planet) draw() {
 
 	gl.Color3f(float32(c.R), float32(c.G), float32(c.B))
 
-	drawUnitSphere(10, 10)
+	drawUnitSphere(10, 10, wireframe)
 
 	gl.PopMatrix()
 }
@@ -83,9 +83,9 @@ func (p *Planet) affectGravity() {
 	}
 }
 
-func drawPlanets() {
+func drawPlanets(wireframe bool) {
 	for _, p := range planets {
-		p.draw()
+		p.draw(wireframe)
 	}
 }
 
