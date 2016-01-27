@@ -53,8 +53,6 @@ func main() {
 		}
 	}()
 
-	log.Printf("here we go")
-
 	for e := range events {
 		switch e := e.(type) {
 		default:
