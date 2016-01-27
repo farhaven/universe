@@ -43,7 +43,7 @@ type Planet struct {
 var planets []*Planet
 
 func (p *Planet) draw(wireframe bool) {
-	c := colorful.Hcl(p.r*180, 0.9, 0.9)
+	c := colorful.Hcl(math.Remainder((math.Pi / p.m)*360, 360), 0.9, 0.9)
 
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.PushMatrix()
