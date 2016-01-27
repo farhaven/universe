@@ -66,7 +66,13 @@ func main() {
 		case *sdl.MouseMotionEvent:
 			camera.queueCommand(CAMERA_TURN, int32(-e.XRel), int32(e.YRel))
 		case *sdl.MouseButtonEvent:
-			log.Printf(`mouse button: %v`, e)
+			if e.State == sdl.RELEASED {
+				continue
+			}
+			switch e.Button {
+			case 1:
+				spawnPlanet(camera.x, camera.y, camera.z)
+			}
 		case *sdl.KeyDownEvent:
 			switch getNameFromKeysym(e.Keysym) {
 			case `Q`:

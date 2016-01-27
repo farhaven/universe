@@ -99,6 +99,10 @@ func stepPlanets() {
 	}
 }
 
+func spawnPlanet(x, y, z float64) {
+	planets = append(planets, &Planet{r: 1.0, pos: Vector3{x, y, z}})
+}
+
 func setupPlanets() {
 	planets = []*Planet{
 		&Planet{r: 1.0, pos: Vector3{x: 30, y: 30}, vel: Vector3{x: -0.2, y: -0.2}},

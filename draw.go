@@ -80,7 +80,7 @@ func createHudSurface(fnt *ttf.Font, planets []*Planet, fps int64, cam *Camera) 
 
 	lines := []string{
 		"WASD: Move, 1: Toggle wireframe, F: Fullscreen, Q: Quit",
-		"Mouse Wheel: Move fast",
+		"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
 		fmt.Sprintf(` α: %0.2f θ: %0.2f`, cam.alpha, cam.theta),
 		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, cam.x, cam.y, cam.z),
 		fmt.Sprintf(` FPS: %d`, fps),
