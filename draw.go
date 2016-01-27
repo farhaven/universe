@@ -166,7 +166,7 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 	/* SDL wants to run on the 'main thread' */
 	runtime.LockOSThread()
 
-	fullscreen, wireframe := false, false
+	fullscreen, wireframe := false, true
 	w, r := initScreen(width, height)
 
 	gl.Viewport(0, 0, width, height)
