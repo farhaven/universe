@@ -74,6 +74,8 @@ func main() {
 				return
 			case `F`:
 				draw_cmd <- DRAW_FULLSCREEN
+			case `1`:
+				draw_cmd <- DRAW_TOGGLE_WIREFRAME
 			case `W`:
 				camera.queueCommand(CAMERA_MOVE, 0, 1)
 			case `S`:

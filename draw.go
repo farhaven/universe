@@ -16,6 +16,7 @@ type DrawCommand int
 const (
 	DRAW_QUIT = iota
 	DRAW_FULLSCREEN
+	DRAW_TOGGLE_WIREFRAME
 )
 
 func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
@@ -33,7 +34,7 @@ func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
 	return w, r
 }
 
-func drawUnitSphere(lat, lon int) {
+func drawUnitSphere(lat, lon int, wireframe bool) {
 	for i := 0; i <= lat; i++ {
 		lat0 := math.Pi * (-0.5 + float64(i-1)/float64(lat))
 		z0 := math.Sin(lat0)
@@ -43,7 +44,11 @@ func drawUnitSphere(lat, lon int) {
 		z1 := math.Sin(lat1)
 		zr1 := math.Cos(lat1)
 
-		gl.Begin(gl.QUAD_STRIP)
+		if wireframe {
+			gl.Begin(gl.LINES)
+		} else {
+			gl.Begin(gl.QUAD_STRIP)
+		}
 		for j := 0; j <= lon; j++ {
 			lng := 2 * math.Pi * (float64(j-1) / float64(lon))
 			x := math.Cos(lng)
@@ -159,7 +164,7 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 	/* SDL wants to run on the 'main thread' */
 	runtime.LockOSThread()
 
-	fullscreen := false
+	fullscreen, wireframe := false, false
 	w, r := initScreen(width, height)
 
 	gl.Viewport(0, 0, width, height)
@@ -180,7 +185,7 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		cam.Update()
 		drawGrid()
-		drawPlanets()
+		drawPlanets(wireframe)
 		drawHud(width, height, fnt, r, planets, fps, cam)
 		r.Present()
 
@@ -196,6 +201,8 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, commands chan Dra
 					w.SetFullscreen(sdl.WINDOW_FULLSCREEN)
 				}
 				fullscreen = !fullscreen
+			case DRAW_TOGGLE_WIREFRAME:
+				wireframe = !wireframe
 			}
 		default:
 			/* ignore */
