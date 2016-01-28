@@ -120,7 +120,7 @@ func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, tpf int64, cam *Camera) *
 	}
 
 	for i, p := range o.Planets {
-		l := fmt.Sprintf(` π %d: r=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f) f:%s`, i, p.R, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z, cam.SphereInFrustum(p.Pos, p.R).String())
+		l := fmt.Sprintf(` π %d: r=%0.2f M=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f) f:%s`, i, p.R, p.M, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z, cam.SphereInFrustum(p.Pos, p.R).String())
 		lines = append(lines, l)
 	}
 
