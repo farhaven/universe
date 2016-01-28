@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"math"
 
 	"./orrery"
 
@@ -99,11 +98,9 @@ func main() {
 			case `Right`:
 				camera.queueCommand(CAMERA_TURN, -10, 0)
 			case `Up`:
-				yoff = math.Min(yoff+10, float64(height))
-				camera.queueCommand(CAMERA_TURN, 0, int32(yoff))
+				camera.queueCommand(CAMERA_TURN, 0, int32(-10))
 			case `Down`:
-				yoff = math.Max(yoff-10, 0)
-				camera.queueCommand(CAMERA_TURN, 0, int32(yoff))
+				camera.queueCommand(CAMERA_TURN, 0, int32(+10))
 			default:
 				log.Printf(`key press: %v %s`, e.Type, getNameFromKeysym(e.Keysym))
 			}
