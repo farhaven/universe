@@ -108,7 +108,7 @@ func drawGrid() {
 	}
 }
 
-func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, fps int64, cam *Camera) *sdl.Surface {
+func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, tpf int64, cam *Camera) *sdl.Surface {
 	color := sdl.Color{0, 255, 255, 255}
 
 	lines := []string{
@@ -116,7 +116,7 @@ func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, fps int64, cam *Camera) *
 		"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
 		fmt.Sprintf(` α: %0.2f θ: %0.2f`, cam.alpha, cam.theta),
 		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, cam.pos.X, cam.pos.Y, cam.pos.Z),
-		fmt.Sprintf(` FPS: %d`, fps),
+		fmt.Sprintf(` Ticks/Frame: %d`, tpf),
 	}
 
 	for i, p := range o.Planets {
@@ -157,8 +157,8 @@ func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, fps int64, cam *Camera) *
 	return srf
 }
 
-func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, o *orrery.Orrery, fps int64, cam *Camera) {
-	srf := createHudSurface(fnt, o, fps, cam)
+func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, o *orrery.Orrery, tpf int64, cam *Camera) {
+	srf := createHudSurface(fnt, o, tpf, cam)
 	defer srf.Free()
 
 	txt, err := r.CreateTextureFromSurface(srf)
@@ -209,9 +209,9 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, o *orrery.Orrery,
 	gl.LoadIdentity()
 	gl.Translatef(0, 0, 0)
 
-	target_fps := 24
-	ticks_per_frame := int64(1000 / target_fps)
-	fps := int64(0)
+	target_tpf := 24
+	ticks_per_frame := int64(1000 / target_tpf)
+	tpf := int64(0)
 
 	for {
 		ticks_start := sdl.GetTicks()
@@ -221,7 +221,7 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, o *orrery.Orrery,
 		cam.Update()
 		drawGrid()
 		drawPlanets(o, wireframe, cam)
-		drawHud(width, height, fnt, r, o, fps, cam)
+		drawHud(width, height, fnt, r, o, tpf, cam)
 		r.Present()
 
 		select {
@@ -244,15 +244,14 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, o *orrery.Orrery,
 		}
 
 		tickdelta := int64(sdl.GetTicks()) - int64(ticks_start)
-		if tickdelta < 0 {
+		if tickdelta <= 0 {
 			tickdelta = 1
 		}
+		tpf = tickdelta
 		tickdelta = ticks_per_frame - tickdelta
 		if tickdelta <= 0 {
 			tickdelta = 1
 		}
-
-		fps = 1000 / tickdelta
 
 		sdl.Delay(uint32(tickdelta))
 	}
