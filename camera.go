@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/go-gl-legacy/gl"
 	"./vector"
+	"log"
 	"math"
 )
 
@@ -27,6 +28,14 @@ type Camera struct {
 
 	theta float64
 	alpha float64
+
+	frustum struct {
+		zNear, zFar float64
+		nearH, nearW float64
+		farH, farW float64
+		fovY, aspect float64
+		planes []vector.Plane
+	}
 }
 
 func NewCamera(width, height int, x, y, z float64) *Camera {
@@ -35,20 +44,63 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 		screenw: width, screenh: height,
 		pos: vector.V3{x, y, z},
 	}
+	c.frustum.zNear = 0.5
+	c.frustum.zFar = 1024
+	c.frustum.fovY = 60
+	c.frustum.aspect = float64(width) / float64(height)
+
+	t := math.Tan(c.frustum.fovY / 360 * math.Pi)
+	c.frustum.nearH = t * c.frustum.zNear
+	c.frustum.nearW = c.frustum.nearH * c.frustum.aspect
+	c.frustum.farH = t * c.frustum.zFar
+	c.frustum.farW = c.frustum.farH * c.frustum.aspect
+
 	return c
 }
+
+type FrustumCheckResult int
+const (
+	INSIDE = iota
+	OUTSIDE
+	INTERSECT
+)
+func (r FrustumCheckResult) String() string {
+	switch r {
+	case INSIDE:
+		return "INSIDE"
+	case OUTSIDE:
+		return "OUTSIDE"
+	case INTERSECT:
+		return "INTERSECT"
+	default:
+		log.Fatalf(`Can't get string for unknown frustum check result: %d`, r)
+	}
+
+	return ""
+}
+
+func (c *Camera) SphereInFrustum(p vector.V3, r float64) FrustumCheckResult {
+	rv := FrustumCheckResult(INSIDE)
+
+	for _, pl := range c.frustum.planes {
+		d := pl.Distance(p)
+		if d < -r {
+			return OUTSIDE
+		} else if (d < r) {
+			rv = INTERSECT
+		}
+	}
+
+	return rv
+}
+
 
 func (c *Camera) lookAt(at vector.V3) {
 	up := vector.V3{0, 0, 1}
 
-	fw := at.Sub(c.pos)
-	fw.Normalize()
-
-	side := fw.Cross(up)
-	side.Normalize()
-
-	up = side.Cross(fw)
-	up.Normalize()
+	fw := at.Sub(c.pos).Normalized()
+	side := fw.Cross(up).Normalized()
+	up = side.Cross(fw).Normalized()
 
 	m := [16]float64{
 		side.X, up.X, -fw.X, 0,
@@ -60,21 +112,45 @@ func (c *Camera) lookAt(at vector.V3) {
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadMatrixd(&m)
 	gl.Translated(-c.pos.X, -c.pos.Y, -c.pos.Z)
+
+	// Update frustum
+	nc := c.pos.Sub(fw.Scaled(-c.frustum.zNear))
+	fc := c.pos.Sub(fw.Scaled(-c.frustum.zFar))
+
+	planes := []vector.Plane{
+		vector.Plane{ fw, nc }, // NEARP
+		vector.Plane{ fw.Scaled(-1), fc }, // FARP
+	}
+
+	nh, nw := c.frustum.nearH, c.frustum.nearW
+
+	// TOP
+	aux := nc.Add(up.Scaled(nh)).Sub(c.pos).Normalized()
+	normal := aux.Cross(side)
+	planes = append(planes, vector.Plane{ normal, nc.Add(up.Scaled(nh)) })
+
+	// BOTTOM
+	aux = nc.Sub(up.Scaled(nh)).Sub(c.pos).Normalized()
+	normal = side.Cross(aux)
+	planes = append(planes, vector.Plane{ normal, nc.Sub(up.Scaled(nh)) })
+
+	// LEFT
+	aux = nc.Sub(side.Scaled(nw)).Sub(c.pos).Normalized()
+	normal = aux.Cross(up)
+	planes = append(planes, vector.Plane{ normal, nc.Sub(side.Scaled(nw)) })
+
+	// LEFT
+	aux = nc.Add(side.Scaled(nw)).Sub(c.pos).Normalized()
+	normal = up.Cross(aux)
+	planes = append(planes, vector.Plane{ normal, nc.Add(side.Scaled(nw)) })
+
+	c.frustum.planes = planes
 }
 
 func (c *Camera) Update() {
 	gl.MatrixMode(gl.PROJECTION)
 	gl.LoadIdentity()
-
-	fovY := float64(60)
-	aspect := float64(c.screenw) / float64(c.screenh)
-	zNear := 0.5
-	zFar := float64(1024)
-
-	fH := math.Tan(fovY / 360 * math.Pi) * zNear
-	fW := fH * aspect
-
-	gl.Frustum(-fW, fW, -fH, fH, zNear, zFar)
+	gl.Frustum(-c.frustum.nearW, c.frustum.nearW, -c.frustum.nearH, c.frustum.nearH, c.frustum.zNear, c.frustum.zFar)
 
 	vx := math.Cos(c.alpha)*10 + c.pos.X
 	vy := math.Sin(c.alpha)*10 + c.pos.Y

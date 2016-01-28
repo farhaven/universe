@@ -38,13 +38,16 @@ func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
 	return w, r
 }
 
-func drawPlanets(o *orrery.Orrery, wireframe bool) {
+func drawPlanets(o *orrery.Orrery, wireframe bool, cam *Camera) {
 	for _, p := range o.Planets {
-		drawPlanet(p, wireframe)
+		drawPlanet(p, wireframe, cam)
 	}
 }
 
-func drawPlanet(p *orrery.Planet, wireframe bool) {
+func drawPlanet(p *orrery.Planet, wireframe bool, cam *Camera) {
+	if cam.SphereInFrustum(p.Pos, p.R) == OUTSIDE {
+		return
+	}
 	c := colorful.Hcl(math.Remainder((math.Pi / p.M)*360, 360), 0.9, 0.9)
 
 	gl.MatrixMode(gl.MODELVIEW)
@@ -116,7 +119,7 @@ func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, fps int64, cam *Camera) *
 	}
 
 	for i, p := range o.Planets {
-		l := fmt.Sprintf(` π %d: r=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.R, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z)
+		l := fmt.Sprintf(` π %d: r=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f) f:%s`, i, p.R, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z, cam.SphereInFrustum(p.Pos, p.R).String())
 		lines = append(lines, l)
 	}
 
@@ -216,7 +219,7 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, o *orrery.Orrery,
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		cam.Update()
 		drawGrid()
-		drawPlanets(o, wireframe)
+		drawPlanets(o, wireframe, cam)
 		drawHud(width, height, fnt, r, o, fps, cam)
 		r.Present()
 

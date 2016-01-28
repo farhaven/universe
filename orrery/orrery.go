@@ -35,8 +35,7 @@ func (p *Planet) affectGravity(o *Orrery) {
 		M := p.M + px.M
 		a := (G * M) / (d * d)
 
-		v.Normalize()
-		v.Scale(a)
+		v = v.Normalized().Scaled(a)
 
 		p.Vel = p.Vel.Add(v.Scaled(1/p.M))
 	}
