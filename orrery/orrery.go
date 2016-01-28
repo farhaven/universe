@@ -58,7 +58,7 @@ func (o *Orrery) SpawnPlanet(x, y, z float64) {
 func New () *Orrery {
 	o := &Orrery{ Planets: []*Planet{
 		&Planet{R: 30.0, M: 500.972}, // Earth
-		&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 400}, Vel: vector.V3{Y: 0.1}}, // Moon
+		&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
 	},}
 
 	return o
