@@ -23,7 +23,7 @@ const (
 )
 
 func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
-	w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL|sdl.WINDOW_INPUT_GRABBED|sdl.WINDOW_FULLSCREEN)
+	w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL|sdl.WINDOW_INPUT_GRABBED)
 	if err != nil {
 		log.Fatalf(`can't create window: %s`, err)
 	}

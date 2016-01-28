@@ -37,9 +37,7 @@ func main() {
 		log.Fatalf(`can't get display mode: %s`, err)
 	}
 
-	width, height := int(mode.W), int(mode.H)
-	yoff := float64(height) / 2
-
+	width, height := 1024, 768
 	o := orrery.New()
 
 	camera := NewCamera(width, height, -40, 40, 10)
