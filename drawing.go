@@ -49,6 +49,7 @@ func drawPlanet(p *orrery.Planet, wireframe bool, cam *Camera) {
 		return
 	}
 	c := colorful.Hcl(math.Remainder((math.Pi / p.M)*360, 360), 0.9, 0.9)
+	slices := int(5 * math.Log(p.R + 1))
 
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.PushMatrix()
@@ -58,7 +59,7 @@ func drawPlanet(p *orrery.Planet, wireframe bool, cam *Camera) {
 
 	gl.Color3f(float32(c.R), float32(c.G), float32(c.B))
 
-	drawUnitSphere(10, 10, wireframe)
+	drawUnitSphere(slices, slices, wireframe)
 
 	gl.PopMatrix()
 }
