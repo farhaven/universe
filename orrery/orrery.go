@@ -10,6 +10,8 @@ type Planet struct {
 	M   float64
 	Pos vector.V3
 	Vel vector.V3
+
+	invalid bool
 }
 
 type Orrery struct {
@@ -49,6 +51,43 @@ func (o *Orrery) Step() {
 	for _, p := range o.Planets {
 		p.move()
 	}
+
+	pl := []*Planet{}
+
+	// Check for collisions
+	for i, p := range o.Planets {
+		if p.invalid {
+			continue
+		}
+		for j, px := range o.Planets {
+			if i == j || px.invalid {
+				continue
+			}
+
+			d := p.Pos.Distance(px.Pos)
+			if d > p.R + px.R {
+				continue
+			}
+
+			l := p
+			s := px
+			if px.M > p.M {
+				l = px
+				s = p
+			}
+
+			l.M += s.M
+			l.Vel = l.Vel.Add(s.Vel.Scaled(1/l.M))
+			s.invalid = true
+		}
+	}
+
+	for _, p := range o.Planets {
+		if !p.invalid {
+			pl = append(pl, p)
+		}
+	}
+	o.Planets = pl
 }
 
 func (o *Orrery) SpawnPlanet(x, y, z float64) {
