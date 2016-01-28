@@ -49,7 +49,7 @@ func drawPlanet(p *orrery.Planet, wireframe bool, cam *Camera) {
 		return
 	}
 	c := colorful.Hcl(math.Remainder((math.Pi / p.M)*360, 360), 0.9, 0.9)
-	slices := int(5 * math.Log(p.R + 1))
+	slices := int(math.Max(10, 5 * math.Log(p.R + 1)))
 
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.PushMatrix()
