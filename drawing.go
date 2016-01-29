@@ -9,9 +9,9 @@ import (
 	"./orrery"
 
 	"github.com/go-gl-legacy/gl"
+	"github.com/lucasb-eyer/go-colorful"
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/sdl_ttf"
-	"github.com/lucasb-eyer/go-colorful"
 )
 
 type DrawCommand int
@@ -24,13 +24,13 @@ const (
 
 type DrawContext struct {
 	width, height int
-	win *sdl.Window
-	renderer *sdl.Renderer
-	cmd chan DrawCommand
+	win           *sdl.Window
+	renderer      *sdl.Renderer
+	cmd           chan DrawCommand
 
 	cam *Camera
 
-	fnt *ttf.Font
+	fnt       *ttf.Font
 	wireframe bool
 }
 
@@ -39,7 +39,7 @@ func NewDrawContext(width, height int, fnt *ttf.Font, camera *Camera, o *orrery.
 
 	// This is a hack to make sure all drawing stuff runs in the same goroutine
 	// XXX: This should probably be replaced by a goroutine that listens to a channel for GL commands
-	go func(){
+	go func() {
 		/* SDL wants to run on the 'main thread' */
 		runtime.LockOSThread()
 
@@ -58,10 +58,10 @@ func NewDrawContext(width, height int, fnt *ttf.Font, camera *Camera, o *orrery.
 		ctx := DrawContext{
 			width: width, height: height,
 			win: w, renderer: r,
-			cmd: make(chan DrawCommand),
+			cmd:       make(chan DrawCommand),
 			wireframe: true,
-			cam: camera,
-			fnt: fnt,
+			cam:       camera,
+			fnt:       fnt,
 		}
 		c <- ctx
 		ctx.drawScreen(o)
@@ -84,8 +84,8 @@ func (ctx *DrawContext) drawPlanet(p *orrery.Planet) {
 	if ctx.cam.SphereInFrustum(p.Pos, p.R) == OUTSIDE {
 		return
 	}
-	c := colorful.Hcl(math.Remainder((math.Pi / p.M)*360, 360), 0.9, 0.9)
-	slices := int(math.Max(10, 5 * math.Log(p.R + 1)))
+	c := colorful.Hcl(math.Remainder((math.Pi/p.M)*360, 360), 0.9, 0.9)
+	slices := int(math.Max(10, 5*math.Log(p.R+1)))
 
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.PushMatrix()

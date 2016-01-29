@@ -1,8 +1,8 @@
 package orrery
 
 import (
-	"math"
 	"../vector"
+	"math"
 )
 
 type Planet struct {
@@ -39,7 +39,7 @@ func (p *Planet) affectGravity(o *Orrery) {
 
 		v = v.Normalized().Scaled(a)
 
-		p.Vel = p.Vel.Add(v.Scaled(1/p.M))
+		p.Vel = p.Vel.Add(v.Scaled(1 / p.M))
 	}
 }
 
@@ -65,7 +65,7 @@ func (o *Orrery) Step() {
 			}
 
 			d := p.Pos.Distance(px.Pos)
-			if d > p.R + px.R {
+			if d > p.R+px.R {
 				continue
 			}
 
@@ -77,7 +77,7 @@ func (o *Orrery) Step() {
 			}
 
 			l.M += s.M
-			l.Vel = l.Vel.Add(s.Vel.Scaled(1/l.M))
+			l.Vel = l.Vel.Add(s.Vel.Scaled(1 / l.M))
 			s.invalid = true
 		}
 	}
@@ -94,11 +94,11 @@ func (o *Orrery) SpawnPlanet(x, y, z float64) {
 	o.Planets = append(o.Planets, &Planet{R: 1.0, M: 5, Pos: vector.V3{x, y, z}})
 }
 
-func New () *Orrery {
-	o := &Orrery{ Planets: []*Planet{
-		&Planet{R: 30.0, M: 500.972}, // Earth
+func New() *Orrery {
+	o := &Orrery{Planets: []*Planet{
+		&Planet{R: 30.0, M: 500.972},                                             // Earth
 		&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
-	},}
+	}}
 
 	return o
 }

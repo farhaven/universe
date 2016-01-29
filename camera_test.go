@@ -1,11 +1,11 @@
 package main
 
 import (
-	"os"
-	"log"
-	"testing"
 	"./vector"
 	"github.com/go-gl-legacy/gl"
+	"log"
+	"os"
+	"testing"
 )
 
 func TestMain(m *testing.M) {

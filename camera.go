@@ -1,9 +1,9 @@
 package main
 
 import (
+	"./vector"
 	"github.com/go-gl-legacy/gl"
 	"github.com/veandco/go-sdl2/sdl"
-	"./vector"
 	"log"
 	"math"
 )
@@ -31,11 +31,11 @@ type Camera struct {
 	alpha float64
 
 	frustum struct {
-		zNear, zFar float64
+		zNear, zFar  float64
 		nearH, nearW float64
-		farH, farW float64
+		farH, farW   float64
 		fovY, aspect float64
-		planes []vector.Plane
+		planes       []vector.Plane
 	}
 }
 
@@ -62,11 +62,13 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 }
 
 type FrustumCheckResult int
+
 const (
 	INSIDE = iota
 	OUTSIDE
 	INTERSECT
 )
+
 func (r FrustumCheckResult) String() string {
 	switch r {
 	case INSIDE:
@@ -89,14 +91,13 @@ func (c *Camera) SphereInFrustum(p vector.V3, r float64) FrustumCheckResult {
 		d := pl.Distance(p)
 		if d < -r {
 			return OUTSIDE
-		} else if (d < r) {
+		} else if d < r {
 			rv = INTERSECT
 		}
 	}
 
 	return rv
 }
-
 
 func (c *Camera) lookAt(at vector.V3) {
 	up := vector.V3{0, 0, 1}
@@ -121,8 +122,8 @@ func (c *Camera) lookAt(at vector.V3) {
 	fc := c.pos.Sub(fw.Scaled(-c.frustum.zFar))
 
 	planes := []vector.Plane{
-		vector.Plane{ fw, nc }, // NEARP
-		vector.Plane{ fw.Scaled(-1), fc }, // FARP
+		vector.Plane{fw, nc},            // NEARP
+		vector.Plane{fw.Scaled(-1), fc}, // FARP
 	}
 
 	nh, nw := c.frustum.nearH, c.frustum.nearW
@@ -130,22 +131,22 @@ func (c *Camera) lookAt(at vector.V3) {
 	// TOP
 	aux := nc.Add(up.Scaled(nh)).Sub(c.pos).Normalized()
 	normal := aux.Cross(side)
-	planes = append(planes, vector.Plane{ normal, nc.Add(up.Scaled(nh)) })
+	planes = append(planes, vector.Plane{normal, nc.Add(up.Scaled(nh))})
 
 	// BOTTOM
 	aux = nc.Sub(up.Scaled(nh)).Sub(c.pos).Normalized()
 	normal = side.Cross(aux)
-	planes = append(planes, vector.Plane{ normal, nc.Sub(up.Scaled(nh)) })
+	planes = append(planes, vector.Plane{normal, nc.Sub(up.Scaled(nh))})
 
 	// LEFT
 	aux = nc.Sub(side.Scaled(nw)).Sub(c.pos).Normalized()
 	normal = aux.Cross(up)
-	planes = append(planes, vector.Plane{ normal, nc.Sub(side.Scaled(nw)) })
+	planes = append(planes, vector.Plane{normal, nc.Sub(side.Scaled(nw))})
 
 	// LEFT
 	aux = nc.Add(side.Scaled(nw)).Sub(c.pos).Normalized()
 	normal = up.Cross(aux)
-	planes = append(planes, vector.Plane{ normal, nc.Add(side.Scaled(nw)) })
+	planes = append(planes, vector.Plane{normal, nc.Add(side.Scaled(nw))})
 
 	c.frustum.planes = planes
 }
@@ -158,7 +159,7 @@ func (c *Camera) Update() {
 
 	vx := math.Cos(c.alpha)*10 + c.pos.X
 	vy := math.Sin(c.alpha)*10 + c.pos.Y
-	vz := c.theta * 10 + c.pos.Z
+	vz := c.theta*10 + c.pos.Z
 
 	c.lookAt(vector.V3{vx, vy, vz})
 }
@@ -181,8 +182,8 @@ func (c *Camera) handleCommands() {
 				c.pos.Y += float64(cmd.Y) * math.Sin(c.alpha)
 				c.pos.Z += float64(cmd.Y) * c.theta
 			} else if cmd.X != 0 {
-				c.pos.X += float64(cmd.X) * math.Cos(c.alpha + Pi2)
-				c.pos.Y += float64(cmd.X) * math.Sin(c.alpha + Pi2)
+				c.pos.X += float64(cmd.X) * math.Cos(c.alpha+Pi2)
+				c.pos.Y += float64(cmd.X) * math.Sin(c.alpha+Pi2)
 			}
 		case CAMERA_DROP:
 			c.pos.Z = 0
