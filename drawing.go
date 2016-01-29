@@ -85,28 +85,29 @@ func (ctx *DrawContext) drawPlanet(p *orrery.Planet) {
 		return
 	}
 	c := colorful.Hcl(math.Remainder((math.Pi/p.M)*360, 360), 0.9, 0.9)
-	slices := int(math.Max(10, 5*math.Log(p.R+1)))
 
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.PushMatrix()
 
 	gl.Translated(p.Pos.X, p.Pos.Y, p.Pos.Z)
-	gl.Scaled(p.R, p.R, p.R)
 
 	gl.Color3f(float32(c.R), float32(c.G), float32(c.B))
 
-	ctx.drawUnitSphere(slices, slices)
+	ctx.drawSphere(p.R)
 
 	gl.PopMatrix()
 }
 
-func (ctx *DrawContext) drawUnitSphere(lat, lon int) {
-	for i := 0; i <= lat; i++ {
-		lat0 := math.Pi * (-0.5 + float64(i-1)/float64(lat))
+func (ctx *DrawContext) drawSphere(r float64) {
+	slices := int(math.Max(10, 5*math.Log(r+1)))
+	gl.Scaled(r, r, r)
+
+	for i := 0; i <= slices; i++ {
+		lat0 := math.Pi * (-0.5 + float64(i-1)/float64(slices))
 		z0 := math.Sin(lat0)
 		zr0 := math.Cos(lat0)
 
-		lat1 := math.Pi * (-0.5 + float64(i)/float64(lat))
+		lat1 := math.Pi * (-0.5 + float64(i)/float64(slices))
 		z1 := math.Sin(lat1)
 		zr1 := math.Cos(lat1)
 
@@ -115,8 +116,8 @@ func (ctx *DrawContext) drawUnitSphere(lat, lon int) {
 		} else {
 			gl.Begin(gl.QUAD_STRIP)
 		}
-		for j := 0; j <= lon; j++ {
-			lng := 2 * math.Pi * (float64(j-1) / float64(lon))
+		for j := 0; j <= slices; j++ {
+			lng := 2 * math.Pi * (float64(j-1) / float64(slices))
 			x := math.Cos(lng)
 			y := math.Sin(lng)
 
