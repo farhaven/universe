@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/go-gl-legacy/gl"
+	"github.com/veandco/go-sdl2/sdl"
 	"./vector"
 	"log"
 	"math"
@@ -54,6 +55,8 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 	c.frustum.nearW = c.frustum.nearH * c.frustum.aspect
 	c.frustum.farH = t * c.frustum.zFar
 	c.frustum.farW = c.frustum.farH * c.frustum.aspect
+
+	sdl.SetRelativeMouseMode(true)
 
 	return c
 }
@@ -148,6 +151,7 @@ func (c *Camera) lookAt(at vector.V3) {
 }
 
 func (c *Camera) Update() {
+	// This has to be called in the GL thread
 	gl.MatrixMode(gl.PROJECTION)
 	gl.LoadIdentity()
 	gl.Frustum(-c.frustum.nearW, c.frustum.nearW, -c.frustum.nearH, c.frustum.nearH, c.frustum.zNear, c.frustum.zFar)

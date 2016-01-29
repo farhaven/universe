@@ -37,15 +37,14 @@ func main() {
 		log.Fatalf(`can't get display mode: %s`, err)
 	}
 
-	width, height := 1024, 768
 	o := orrery.New()
 
+	width, height := 1024, 768
 	camera := NewCamera(width, height, -40, 40, 10)
 	sdl.SetRelativeMouseMode(true)
 	go camera.handleCommands()
 
-	draw_cmd := make(chan DrawCommand)
-	go drawScreen(width, height, fnt, camera, o, draw_cmd)
+	ctx := NewDrawContext(width, height, fnt, camera, o)
 
 	events := make(chan sdl.Event)
 	go func() {
@@ -75,12 +74,12 @@ func main() {
 		case *sdl.KeyDownEvent:
 			switch getNameFromKeysym(e.Keysym) {
 			case `Q`:
-				draw_cmd <- DRAW_QUIT
+				ctx.queueCommand(DRAW_QUIT)
 				return
 			case `F`:
-				draw_cmd <- DRAW_FULLSCREEN
+				ctx.queueCommand(DRAW_FULLSCREEN)
 			case `1`:
-				draw_cmd <- DRAW_TOGGLE_WIREFRAME
+				ctx.queueCommand(DRAW_TOGGLE_WIREFRAME)
 			case `W`:
 				camera.queueCommand(CAMERA_MOVE, 0, 1)
 			case `S`:
@@ -103,7 +102,7 @@ func main() {
 				log.Printf(`key press: %v %s`, e.Type, getNameFromKeysym(e.Keysym))
 			}
 		case *sdl.QuitEvent:
-			draw_cmd <- DRAW_QUIT
+			ctx.queueCommand(DRAW_QUIT)
 			return
 		}
 	}

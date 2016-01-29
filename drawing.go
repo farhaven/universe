@@ -22,30 +22,66 @@ const (
 	DRAW_TOGGLE_WIREFRAME
 )
 
-func initScreen(width, height int) (*sdl.Window, *sdl.Renderer) {
-	w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL|sdl.WINDOW_INPUT_GRABBED)
-	if err != nil {
-		log.Fatalf(`can't create window: %s`, err)
-	}
+type DrawContext struct {
+	width, height int
+	win *sdl.Window
+	renderer *sdl.Renderer
+	cmd chan DrawCommand
 
-	if gl.Init() != 0 {
-		log.Fatalln(`can't init GL`)
-	}
+	cam *Camera
 
-	gl.ClearColor(0.1, 0.1, 0.1, 0.1)
-	gl.Enable(gl.DEPTH_TEST)
-
-	return w, r
+	fnt *ttf.Font
+	wireframe bool
 }
 
-func drawPlanets(o *orrery.Orrery, wireframe bool, cam *Camera) {
+func NewDrawContext(width, height int, fnt *ttf.Font, camera *Camera, o *orrery.Orrery) DrawContext {
+	c := make(chan DrawContext)
+
+	// This is a hack to make sure all drawing stuff runs in the same goroutine
+	// XXX: This should probably be replaced by a goroutine that listens to a channel for GL commands
+	go func(){
+		/* SDL wants to run on the 'main thread' */
+		runtime.LockOSThread()
+
+		w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL|sdl.WINDOW_INPUT_GRABBED)
+		if err != nil {
+			log.Fatalf(`can't create window: %s`, err)
+		}
+
+		if gl.Init() != 0 {
+			log.Fatalln(`can't init GL`)
+		}
+
+		gl.ClearColor(0.1, 0.1, 0.1, 0.1)
+		gl.Enable(gl.DEPTH_TEST)
+
+		ctx := DrawContext{
+			width: width, height: height,
+			win: w, renderer: r,
+			cmd: make(chan DrawCommand),
+			wireframe: true,
+			cam: camera,
+			fnt: fnt,
+		}
+		c <- ctx
+		ctx.drawScreen(o)
+	}()
+
+	return <-c
+}
+
+func (ctx *DrawContext) queueCommand(cmd DrawCommand) {
+	ctx.cmd <- cmd
+}
+
+func (ctx *DrawContext) drawPlanets(o *orrery.Orrery) {
 	for _, p := range o.Planets {
-		drawPlanet(p, wireframe, cam)
+		ctx.drawPlanet(p)
 	}
 }
 
-func drawPlanet(p *orrery.Planet, wireframe bool, cam *Camera) {
-	if cam.SphereInFrustum(p.Pos, p.R) == OUTSIDE {
+func (ctx *DrawContext) drawPlanet(p *orrery.Planet) {
+	if ctx.cam.SphereInFrustum(p.Pos, p.R) == OUTSIDE {
 		return
 	}
 	c := colorful.Hcl(math.Remainder((math.Pi / p.M)*360, 360), 0.9, 0.9)
@@ -59,12 +95,12 @@ func drawPlanet(p *orrery.Planet, wireframe bool, cam *Camera) {
 
 	gl.Color3f(float32(c.R), float32(c.G), float32(c.B))
 
-	drawUnitSphere(slices, slices, wireframe)
+	ctx.drawUnitSphere(slices, slices)
 
 	gl.PopMatrix()
 }
 
-func drawUnitSphere(lat, lon int, wireframe bool) {
+func (ctx *DrawContext) drawUnitSphere(lat, lon int) {
 	for i := 0; i <= lat; i++ {
 		lat0 := math.Pi * (-0.5 + float64(i-1)/float64(lat))
 		z0 := math.Sin(lat0)
@@ -74,7 +110,7 @@ func drawUnitSphere(lat, lon int, wireframe bool) {
 		z1 := math.Sin(lat1)
 		zr1 := math.Cos(lat1)
 
-		if wireframe {
+		if ctx.wireframe {
 			gl.Begin(gl.LINES)
 		} else {
 			gl.Begin(gl.QUAD_STRIP)
@@ -93,7 +129,7 @@ func drawUnitSphere(lat, lon int, wireframe bool) {
 	}
 }
 
-func drawGrid() {
+func (ctx *DrawContext) drawGrid() {
 	gl.Disable(gl.DEPTH_TEST)
 	defer gl.Enable(gl.DEPTH_TEST)
 
@@ -108,26 +144,26 @@ func drawGrid() {
 	}
 }
 
-func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, tpf int64, cam *Camera) *sdl.Surface {
+func (ctx *DrawContext) createHudSurface(o *orrery.Orrery, tpf int64) *sdl.Surface {
 	color := sdl.Color{0, 255, 255, 255}
 
 	lines := []string{
 		"WASD: Move, 1: Toggle wireframe, F: Fullscreen, Q: Quit",
 		"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
-		fmt.Sprintf(` α: %0.2f θ: %0.2f`, cam.alpha, cam.theta),
-		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, cam.pos.X, cam.pos.Y, cam.pos.Z),
+		fmt.Sprintf(` α: %0.2f θ: %0.2f`, ctx.cam.alpha, ctx.cam.theta),
+		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, ctx.cam.pos.X, ctx.cam.pos.Y, ctx.cam.pos.Z),
 		fmt.Sprintf(` Ticks/Frame: %d`, tpf),
 	}
 
 	for i, p := range o.Planets {
-		l := fmt.Sprintf(` π %d: r=%0.2f M=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f) f:%s`, i, p.R, p.M, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z, cam.SphereInFrustum(p.Pos, p.R).String())
+		l := fmt.Sprintf(` π %d: r=%0.2f M=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f) f:%s`, i, p.R, p.M, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z, ctx.cam.SphereInFrustum(p.Pos, p.R).String())
 		lines = append(lines, l)
 	}
 
 	w, h := int32(0), int32(0)
 	surfaces := []*sdl.Surface{}
 	for _, l := range lines {
-		s, err := fnt.RenderUTF8_Blended(l, color)
+		s, err := ctx.fnt.RenderUTF8_Blended(l, color)
 		if err != nil {
 			log.Fatalf(`can't render text: %s`, err)
 		}
@@ -157,11 +193,11 @@ func createHudSurface(fnt *ttf.Font, o *orrery.Orrery, tpf int64, cam *Camera) *
 	return srf
 }
 
-func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, o *orrery.Orrery, tpf int64, cam *Camera) {
-	srf := createHudSurface(fnt, o, tpf, cam)
+func (ctx *DrawContext) drawHud(o *orrery.Orrery, tpf int64) {
+	srf := ctx.createHudSurface(o, tpf)
 	defer srf.Free()
 
-	txt, err := r.CreateTextureFromSurface(srf)
+	txt, err := ctx.renderer.CreateTextureFromSurface(srf)
 	if err != nil {
 		log.Fatalf(`can't create texture from text surface: %s`, err)
 	}
@@ -169,7 +205,7 @@ func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, o *orrery.Orrery
 	gl.MatrixMode(gl.PROJECTION)
 	gl.PushMatrix()
 	gl.LoadIdentity()
-	gl.Ortho(0.0, float64(width), float64(height), 0.0, -1.0, 1.0)
+	gl.Ortho(0.0, float64(ctx.width), float64(ctx.height), 0.0, -1.0, 1.0)
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
@@ -187,7 +223,7 @@ func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, o *orrery.Orrery
 	gl.Vertex2f(float32(srf.W), float32(srf.H))
 	gl.TexCoord2f(0, 1)
 	gl.Vertex2f(0.0, float32(srf.H))
-	if err = r.Copy(txt, nil, &sdl.Rect{W: srf.W, H: srf.H}); err != nil {
+	if err = ctx.renderer.Copy(txt, nil, &sdl.Rect{W: srf.W, H: srf.H}); err != nil {
 		log.Fatalf(`can't copy texture: %s`, err)
 	}
 	gl.End()
@@ -195,14 +231,10 @@ func drawHud(width, height int, fnt *ttf.Font, r *sdl.Renderer, o *orrery.Orrery
 	gl.PopMatrix()
 }
 
-func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, o *orrery.Orrery, commands chan DrawCommand) {
-	/* SDL wants to run on the 'main thread' */
-	runtime.LockOSThread()
+func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
+	fullscreen := false
 
-	fullscreen, wireframe := false, true
-	w, r := initScreen(width, height)
-
-	gl.Viewport(0, 0, width, height)
+	gl.Viewport(0, 0, ctx.width, ctx.height)
 	gl.Hint(gl.PERSPECTIVE_CORRECTION_HINT, gl.NICEST)
 
 	gl.MatrixMode(gl.MODELVIEW)
@@ -218,26 +250,26 @@ func drawScreen(width, height int, fnt *ttf.Font, cam *Camera, o *orrery.Orrery,
 		o.Step()
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		cam.Update()
-		drawGrid()
-		drawPlanets(o, wireframe, cam)
-		drawHud(width, height, fnt, r, o, tpf, cam)
-		r.Present()
+		ctx.cam.Update()
+		ctx.drawGrid()
+		ctx.drawPlanets(o)
+		ctx.drawHud(o, tpf)
+		ctx.renderer.Present()
 
 		select {
-		case cmd := <-commands:
+		case cmd := <-ctx.cmd:
 			switch cmd {
 			case DRAW_QUIT:
 				return
 			case DRAW_FULLSCREEN:
 				if fullscreen {
-					w.SetFullscreen(0)
+					ctx.win.SetFullscreen(0)
 				} else {
-					w.SetFullscreen(sdl.WINDOW_FULLSCREEN)
+					ctx.win.SetFullscreen(sdl.WINDOW_FULLSCREEN)
 				}
 				fullscreen = !fullscreen
 			case DRAW_TOGGLE_WIREFRAME:
-				wireframe = !wireframe
+				ctx.wireframe = !ctx.wireframe
 			}
 		default:
 			/* ignore */
