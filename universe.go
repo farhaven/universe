@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"./orrery"
+	"./ui"
 
 	"github.com/veandco/go-sdl2/sdl"
 	ttf "github.com/veandco/go-sdl2/sdl_ttf"
@@ -40,11 +41,8 @@ func main() {
 	o := orrery.New()
 
 	width, height := 1024, 768
-	camera := NewCamera(width, height, -40, 40, 10)
-	sdl.SetRelativeMouseMode(true)
-	go camera.handleCommands()
-
-	ctx := NewDrawContext(width, height, fnt, camera, o)
+	camera := ui.NewCamera(width, height, -40, 40, 10)
+	ctx := ui.NewDrawContext(width, height, fnt, camera, o)
 
 	events := make(chan sdl.Event)
 	go func() {
@@ -60,49 +58,49 @@ func main() {
 		case *sdl.WindowEvent, *sdl.KeyUpEvent, *sdl.TextInputEvent:
 			/* ignore */
 		case *sdl.MouseWheelEvent:
-			camera.queueCommand(CAMERA_MOVE, 0, -e.Y*10)
+			camera.QueueCommand(ui.CAMERA_MOVE, 0, -e.Y*10)
 		case *sdl.MouseMotionEvent:
-			camera.queueCommand(CAMERA_TURN, int32(-e.XRel), int32(e.YRel))
+			camera.QueueCommand(ui.CAMERA_TURN, int32(-e.XRel), int32(e.YRel))
 		case *sdl.MouseButtonEvent:
 			if e.State == sdl.RELEASED {
 				continue
 			}
 			switch e.Button {
 			case 1:
-				o.SpawnPlanet(camera.pos.X, camera.pos.Y, camera.pos.Z)
+				o.SpawnPlanet(camera.Pos.X, camera.Pos.Y, camera.Pos.Z)
 			}
 		case *sdl.KeyDownEvent:
 			switch getNameFromKeysym(e.Keysym) {
 			case `Q`:
-				ctx.queueCommand(DRAW_QUIT)
+				ctx.QueueCommand(ui.DRAW_QUIT)
 				return
 			case `F`:
-				ctx.queueCommand(DRAW_FULLSCREEN)
+				ctx.QueueCommand(ui.DRAW_FULLSCREEN)
 			case `1`:
-				ctx.queueCommand(DRAW_TOGGLE_WIREFRAME)
+				ctx.QueueCommand(ui.DRAW_TOGGLE_WIREFRAME)
 			case `W`:
-				camera.queueCommand(CAMERA_MOVE, 0, 1)
+				camera.QueueCommand(ui.CAMERA_MOVE, 0, 1)
 			case `S`:
-				camera.queueCommand(CAMERA_MOVE, 0, -1)
+				camera.QueueCommand(ui.CAMERA_MOVE, 0, -1)
 			case `A`:
-				camera.queueCommand(CAMERA_MOVE, 1, 0)
+				camera.QueueCommand(ui.CAMERA_MOVE, 1, 0)
 			case `D`:
-				camera.queueCommand(CAMERA_MOVE, -1, 0)
+				camera.QueueCommand(ui.CAMERA_MOVE, -1, 0)
 			case `Space`:
-				camera.queueCommand(CAMERA_DROP, 0, 0)
+				camera.QueueCommand(ui.CAMERA_DROP, 0, 0)
 			case `Left`:
-				camera.queueCommand(CAMERA_TURN, 10, 0)
+				camera.QueueCommand(ui.CAMERA_TURN, 10, 0)
 			case `Right`:
-				camera.queueCommand(CAMERA_TURN, -10, 0)
+				camera.QueueCommand(ui.CAMERA_TURN, -10, 0)
 			case `Up`:
-				camera.queueCommand(CAMERA_TURN, 0, int32(-10))
+				camera.QueueCommand(ui.CAMERA_TURN, 0, int32(-10))
 			case `Down`:
-				camera.queueCommand(CAMERA_TURN, 0, int32(+10))
+				camera.QueueCommand(ui.CAMERA_TURN, 0, int32(+10))
 			default:
 				log.Printf(`key press: %v %s`, e.Type, getNameFromKeysym(e.Keysym))
 			}
 		case *sdl.QuitEvent:
-			ctx.queueCommand(DRAW_QUIT)
+			ctx.QueueCommand(ui.DRAW_QUIT)
 			return
 		}
 	}

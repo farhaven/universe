@@ -1,7 +1,7 @@
-package main
+package ui
 
 import (
-	"./vector"
+	"../vector"
 	"github.com/go-gl-legacy/gl"
 	"github.com/veandco/go-sdl2/sdl"
 	"log"
@@ -25,7 +25,7 @@ type Camera struct {
 	screenw int
 	screenh int
 
-	pos vector.V3
+	Pos vector.V3
 
 	theta float64
 	alpha float64
@@ -43,7 +43,7 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 	c := &Camera{
 		cmds:    make(chan CameraCommand),
 		screenw: width, screenh: height,
-		pos: vector.V3{x, y, z},
+		Pos: vector.V3{x, y, z},
 	}
 	c.frustum.zNear = 0.5
 	c.frustum.zFar = 1024
@@ -57,6 +57,7 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 	c.frustum.farW = c.frustum.farH * c.frustum.aspect
 
 	sdl.SetRelativeMouseMode(true)
+	go c.handleCommands()
 
 	return c
 }
@@ -102,7 +103,7 @@ func (c *Camera) SphereInFrustum(p vector.V3, r float64) FrustumCheckResult {
 func (c *Camera) lookAt(at vector.V3) {
 	up := vector.V3{0, 0, 1}
 
-	fw := at.Sub(c.pos).Normalized()
+	fw := at.Sub(c.Pos).Normalized()
 	side := fw.Cross(up).Normalized()
 	up = side.Cross(fw).Normalized()
 
@@ -115,11 +116,11 @@ func (c *Camera) lookAt(at vector.V3) {
 
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadMatrixd(&m)
-	gl.Translated(-c.pos.X, -c.pos.Y, -c.pos.Z)
+	gl.Translated(-c.Pos.X, -c.Pos.Y, -c.Pos.Z)
 
 	// Update frustum
-	nc := c.pos.Sub(fw.Scaled(-c.frustum.zNear))
-	fc := c.pos.Sub(fw.Scaled(-c.frustum.zFar))
+	nc := c.Pos.Sub(fw.Scaled(-c.frustum.zNear))
+	fc := c.Pos.Sub(fw.Scaled(-c.frustum.zFar))
 
 	planes := []vector.Plane{
 		vector.Plane{fw, nc},            // NEARP
@@ -129,22 +130,22 @@ func (c *Camera) lookAt(at vector.V3) {
 	nh, nw := c.frustum.nearH, c.frustum.nearW
 
 	// TOP
-	aux := nc.Add(up.Scaled(nh)).Sub(c.pos).Normalized()
+	aux := nc.Add(up.Scaled(nh)).Sub(c.Pos).Normalized()
 	normal := aux.Cross(side)
 	planes = append(planes, vector.Plane{normal, nc.Add(up.Scaled(nh))})
 
 	// BOTTOM
-	aux = nc.Sub(up.Scaled(nh)).Sub(c.pos).Normalized()
+	aux = nc.Sub(up.Scaled(nh)).Sub(c.Pos).Normalized()
 	normal = side.Cross(aux)
 	planes = append(planes, vector.Plane{normal, nc.Sub(up.Scaled(nh))})
 
 	// LEFT
-	aux = nc.Sub(side.Scaled(nw)).Sub(c.pos).Normalized()
+	aux = nc.Sub(side.Scaled(nw)).Sub(c.Pos).Normalized()
 	normal = aux.Cross(up)
 	planes = append(planes, vector.Plane{normal, nc.Sub(side.Scaled(nw))})
 
 	// LEFT
-	aux = nc.Add(side.Scaled(nw)).Sub(c.pos).Normalized()
+	aux = nc.Add(side.Scaled(nw)).Sub(c.Pos).Normalized()
 	normal = up.Cross(aux)
 	planes = append(planes, vector.Plane{normal, nc.Add(side.Scaled(nw))})
 
@@ -157,9 +158,9 @@ func (c *Camera) Update() {
 	gl.LoadIdentity()
 	gl.Frustum(-c.frustum.nearW, c.frustum.nearW, -c.frustum.nearH, c.frustum.nearH, c.frustum.zNear, c.frustum.zFar)
 
-	vx := math.Cos(c.alpha)*10 + c.pos.X
-	vy := math.Sin(c.alpha)*10 + c.pos.Y
-	vz := c.theta*10 + c.pos.Z
+	vx := math.Cos(c.alpha)*10 + c.Pos.X
+	vy := math.Sin(c.alpha)*10 + c.Pos.Y
+	vz := c.theta*10 + c.Pos.Z
 
 	c.lookAt(vector.V3{vx, vy, vz})
 }
@@ -178,18 +179,18 @@ func (c *Camera) handleCommands() {
 			}
 		case CAMERA_MOVE:
 			if cmd.Y != 0 {
-				c.pos.X += float64(cmd.Y) * math.Cos(c.alpha)
-				c.pos.Y += float64(cmd.Y) * math.Sin(c.alpha)
-				c.pos.Z += float64(cmd.Y) * c.theta
+				c.Pos.X += float64(cmd.Y) * math.Cos(c.alpha)
+				c.Pos.Y += float64(cmd.Y) * math.Sin(c.alpha)
+				c.Pos.Z += float64(cmd.Y) * c.theta
 			} else if cmd.X != 0 {
-				c.pos.X += float64(cmd.X) * math.Cos(c.alpha+Pi2)
-				c.pos.Y += float64(cmd.X) * math.Sin(c.alpha+Pi2)
+				c.Pos.X += float64(cmd.X) * math.Cos(c.alpha+Pi2)
+				c.Pos.Y += float64(cmd.X) * math.Sin(c.alpha+Pi2)
 			}
 		case CAMERA_DROP:
-			c.pos.Z = 0
+			c.Pos.Z = 0
 		}
 	}
 }
-func (c *Camera) queueCommand(type_ int, x, y int32) {
+func (c *Camera) QueueCommand(type_ int, x, y int32) {
 	c.cmds <- CameraCommand{type_, x, y}
 }

@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	"fmt"
@@ -6,7 +6,8 @@ import (
 	"math"
 	"runtime"
 
-	"./orrery"
+	"../orrery"
+	"../vector"
 
 	"github.com/go-gl-legacy/gl"
 	"github.com/lucasb-eyer/go-colorful"
@@ -70,7 +71,7 @@ func NewDrawContext(width, height int, fnt *ttf.Font, camera *Camera, o *orrery.
 	return <-c
 }
 
-func (ctx *DrawContext) queueCommand(cmd DrawCommand) {
+func (ctx *DrawContext) QueueCommand(cmd DrawCommand) {
 	ctx.cmd <- cmd
 }
 
@@ -152,7 +153,7 @@ func (ctx *DrawContext) createHudSurface(o *orrery.Orrery, tpf int64) *sdl.Surfa
 		"WASD: Move, 1: Toggle wireframe, F: Fullscreen, Q: Quit",
 		"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
 		fmt.Sprintf(` α: %0.2f θ: %0.2f`, ctx.cam.alpha, ctx.cam.theta),
-		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, ctx.cam.pos.X, ctx.cam.pos.Y, ctx.cam.pos.Z),
+		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, ctx.cam.Pos.X, ctx.cam.Pos.Y, ctx.cam.Pos.Z),
 		fmt.Sprintf(` Ticks/Frame: %d`, tpf),
 	}
 
