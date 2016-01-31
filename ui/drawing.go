@@ -33,9 +33,39 @@ type DrawContext struct {
 
 	fnt       *ttf.Font
 	wireframe bool
+
+	shutdown chan bool
 }
 
-func NewDrawContext(width, height int, fnt *ttf.Font, camera *Camera, o *orrery.Orrery) DrawContext {
+func initSDL() {
+	if err := sdl.Init(sdl.INIT_VIDEO); err != nil {
+		log.Fatalf(`SDL Init failed: %s`, err)
+	}
+	if err := sdl.VideoInit(sdl.GetVideoDriver(0)); err != nil {
+		log.Fatalf(`can't init video: %s`, err)
+	}
+}
+
+func loadFont() *ttf.Font {
+	if err := ttf.Init(); err != nil {
+		log.Fatalf(`can't init font system: %s`, err)
+	}
+
+	fnt, err := ttf.OpenFont("font.ttf", 12)
+	if err != nil {
+		log.Fatalf(`can't load font.ttf: %s`, err)
+	}
+
+	return fnt
+}
+
+func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
+	initSDL()
+
+	fnt := loadFont()
+
+	cam := NewCamera(width, height, -40, 40, 10)
+
 	c := make(chan DrawContext)
 
 	// This is a hack to make sure all drawing stuff runs in the same goroutine
@@ -61,14 +91,27 @@ func NewDrawContext(width, height int, fnt *ttf.Font, camera *Camera, o *orrery.
 			win: w, renderer: r,
 			cmd:       make(chan DrawCommand),
 			wireframe: true,
-			cam:       camera,
+			cam:       cam,
 			fnt:       fnt,
+			shutdown: make(chan bool),
 		}
 		c <- ctx
+
+		go ctx.EventLoop(o)
 		ctx.drawScreen(o)
+		ctx.shutdown <- true
 	}()
 
 	return <-c
+}
+
+func (ctx *DrawContext) WaitForShutdown() {
+	<-ctx.shutdown
+}
+
+func (ctx *DrawContext) Shutdown() {
+	sdl.VideoQuit()
+	sdl.Quit()
 }
 
 func (ctx *DrawContext) QueueCommand(cmd DrawCommand) {
