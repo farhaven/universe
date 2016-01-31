@@ -11,15 +11,39 @@ type Planet struct {
 	Pos vector.V3
 	Vel vector.V3
 
+	Trail []vector.V3
+
 	invalid bool
 }
 
 type Orrery struct {
 	Planets []*Planet
+	trailLength int
 }
 
-func (p *Planet) move() {
-	p.Pos = p.Pos.Add(p.Vel)
+func (p *Planet) move(trailLength int) {
+	newPos := p.Pos.Add(p.Vel)
+
+	addToTrail := false
+
+	if len(p.Trail) > 0 {
+		d := newPos.Distance(p.Trail[len(p.Trail) - 1])
+
+		if d > p.R {
+			addToTrail = true
+		}
+	} else {
+		addToTrail = true
+	}
+
+	if addToTrail {
+		p.Trail = append(p.Trail, p.Pos)
+		if len(p.Trail) > trailLength {
+			p.Trail = p.Trail[len(p.Trail) - trailLength:]
+		}
+	}
+
+	p.Pos = newPos
 }
 
 func (p *Planet) affectGravity(o *Orrery) {
@@ -98,7 +122,9 @@ func New() *Orrery {
 	o := &Orrery{Planets: []*Planet{
 		&Planet{R: 30.0, M: 500.972},                                             // Earth
 		&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
-	}}
+		},
+		trailLength: 20,
+	}
 
 	return o
 }

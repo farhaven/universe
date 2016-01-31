@@ -82,25 +82,28 @@ func (ctx *DrawContext) drawPlanets(o *orrery.Orrery) {
 }
 
 func (ctx *DrawContext) drawPlanet(p *orrery.Planet) {
-	if ctx.cam.SphereInFrustum(p.Pos, p.R) == OUTSIDE {
-		return
-	}
 	c := colorful.Hcl(math.Remainder((math.Pi/p.M)*360, 360), 0.9, 0.9)
 
-	gl.MatrixMode(gl.MODELVIEW)
-	gl.PushMatrix()
+	ctx.drawSphere(p.Pos, p.R, c)
+	for _, pos := range p.Trail {
+		ctx.drawSphere(pos, 1, c)
+	}
+}
 
-	gl.Translated(p.Pos.X, p.Pos.Y, p.Pos.Z)
+func (ctx *DrawContext) drawSphere(p vector.V3, r float64, c colorful.Color) {
+	if ctx.cam.SphereInFrustum(p, r) == OUTSIDE {
+		return
+	}
 
 	gl.Color3f(float32(c.R), float32(c.G), float32(c.B))
 
-	ctx.drawSphere(p.R)
+	gl.MatrixMode(gl.MODELVIEW)
+	gl.PushMatrix()
+	defer gl.PopMatrix()
 
-	gl.PopMatrix()
-}
-
-func (ctx *DrawContext) drawSphere(r float64) {
 	slices := int(math.Max(10, 5*math.Log(r+1)))
+
+	gl.Translated(p.X, p.Y, p.Z)
 	gl.Scaled(r, r, r)
 
 	for i := 0; i <= slices; i++ {
