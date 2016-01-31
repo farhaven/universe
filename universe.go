@@ -96,6 +96,8 @@ func main() {
 				camera.QueueCommand(ui.CAMERA_TURN, 0, int32(-10))
 			case `Down`:
 				camera.QueueCommand(ui.CAMERA_TURN, 0, int32(+10))
+			case `P`:
+				panic("User requested panic")
 			default:
 				log.Printf(`key press: %v %s`, e.Type, getNameFromKeysym(e.Keysym))
 			}

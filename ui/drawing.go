@@ -155,6 +155,7 @@ func (ctx *DrawContext) createHudSurface(o *orrery.Orrery, tpf int64) *sdl.Surfa
 	lines := []string{
 		"WASD: Move, 1: Toggle wireframe, F: Fullscreen, Q: Quit",
 		"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
+		"P: panic and dump stacks",
 		fmt.Sprintf(` α: %0.2f θ: %0.2f`, ctx.cam.alpha, ctx.cam.theta),
 		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, ctx.cam.Pos.X, ctx.cam.Pos.Y, ctx.cam.Pos.Z),
 		fmt.Sprintf(` Ticks/Frame: %d`, tpf),
