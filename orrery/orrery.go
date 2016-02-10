@@ -40,7 +40,7 @@ func (p *Planet) move(trailLength int) {
 	addToTrail := false
 
 	if len(p.Trail) > 0 {
-		d := newPos.Distance(p.Trail[len(p.Trail) - 1])
+		d := newPos.Distance(p.Trail[len(p.Trail)-1])
 
 		if d > p.R {
 			addToTrail = true
@@ -52,7 +52,7 @@ func (p *Planet) move(trailLength int) {
 	if addToTrail {
 		p.Trail = append(p.Trail, p.Pos)
 		if len(p.Trail) > trailLength {
-			p.Trail = p.Trail[len(p.Trail) - trailLength:]
+			p.Trail = p.Trail[len(p.Trail)-trailLength:]
 		}
 	}
 
