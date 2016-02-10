@@ -128,8 +128,8 @@ func (ctx *DrawContext) drawPlanet(p *orrery.Planet) {
 	c := colorful.Hcl(math.Remainder((math.Pi/p.M)*360, 360), 0.9, 0.9)
 
 	ctx.drawSphere(p.Pos, p.R, c)
-	for _, pos := range p.Trail {
-		ctx.drawSphere(pos, 1, c)
+	for i, pos := range p.Trail {
+		ctx.drawSphere(pos, 1 / float64(len(p.Trail) - i + 1), c)
 	}
 }
 
