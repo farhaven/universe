@@ -3,6 +3,7 @@ package orrery
 import (
 	"../vector"
 	"math"
+	"sync"
 )
 
 type Planet struct {
@@ -17,8 +18,20 @@ type Planet struct {
 }
 
 type Orrery struct {
-	Planets []*Planet
+	planets     []*Planet
 	trailLength int
+	q           chan bool
+	l           sync.Mutex
+}
+
+func (o *Orrery) Planets() []*Planet {
+	o.l.Lock()
+	defer o.l.Unlock()
+
+	r := make([]*Planet, len(o.planets))
+	copy(r, o.planets)
+
+	return r
 }
 
 func (p *Planet) move(trailLength int) {
@@ -49,7 +62,7 @@ func (p *Planet) move(trailLength int) {
 func (p *Planet) affectGravity(o *Orrery) {
 	// G := 6.67 * math.Pow(10, -11)
 	G := float64(0.05)
-	for _, px := range o.Planets {
+	for _, px := range o.planets {
 		if p == px {
 			continue
 		}
@@ -68,63 +81,81 @@ func (p *Planet) affectGravity(o *Orrery) {
 }
 
 func (o *Orrery) Step() {
-	for _, p := range o.Planets {
-		p.affectGravity(o)
-	}
+	o.q <- true
+}
 
-	for _, p := range o.Planets {
-		p.move()
-	}
+func (o *Orrery) loop() {
+	for {
+		<-o.q
+		o.l.Lock()
 
-	pl := []*Planet{}
-
-	// Check for collisions
-	for i, p := range o.Planets {
-		if p.invalid {
-			continue
+		for _, p := range o.planets {
+			p.affectGravity(o)
 		}
-		for j, px := range o.Planets {
-			if i == j || px.invalid {
+
+		for _, p := range o.planets {
+			p.move(o.trailLength)
+		}
+
+		pl := []*Planet{}
+
+		// Check for collisions
+		for i, p := range o.planets {
+			if p.invalid {
 				continue
 			}
+			for j, px := range o.planets {
+				if i == j || px.invalid {
+					continue
+				}
 
-			d := p.Pos.Distance(px.Pos)
-			if d > p.R+px.R {
-				continue
+				d := p.Pos.Distance(px.Pos)
+				if d > p.R+px.R {
+					continue
+				}
+
+				l := p
+				s := px
+				if px.M > p.M {
+					l = px
+					s = p
+				}
+
+				l.M += s.M
+				l.Vel = l.Vel.Add(s.Vel.Scaled(1 / l.M))
+				s.invalid = true
 			}
+		}
 
-			l := p
-			s := px
-			if px.M > p.M {
-				l = px
-				s = p
+		for _, p := range o.planets {
+			if !p.invalid {
+				pl = append(pl, p)
 			}
-
-			l.M += s.M
-			l.Vel = l.Vel.Add(s.Vel.Scaled(1 / l.M))
-			s.invalid = true
 		}
+		o.planets = pl
+		o.l.Unlock()
 	}
-
-	for _, p := range o.Planets {
-		if !p.invalid {
-			pl = append(pl, p)
-		}
-	}
-	o.Planets = pl
 }
 
 func (o *Orrery) SpawnPlanet(x, y, z float64) {
-	o.Planets = append(o.Planets, &Planet{R: 1.0, M: 5, Pos: vector.V3{x, y, z}})
+	o.l.Lock()
+	defer o.l.Unlock()
+
+	o.planets = append(o.planets, &Planet{R: 1.0, M: 5, Pos: vector.V3{x, y, z}})
 }
 
 func New() *Orrery {
-	o := &Orrery{Planets: []*Planet{
-		&Planet{R: 30.0, M: 500.972},                                             // Earth
-		&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
+	o := &Orrery{
+		planets: []*Planet{
+			&Planet{R: 30.0, M: 500.972},                                             // Earth
+			&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
 		},
 		trailLength: 20,
+
+		q: make(chan bool),
 	}
+
+	go o.loop()
 
 	return o
 }

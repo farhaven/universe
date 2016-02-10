@@ -119,7 +119,7 @@ func (ctx *DrawContext) QueueCommand(cmd DrawCommand) {
 }
 
 func (ctx *DrawContext) drawPlanets(o *orrery.Orrery) {
-	for _, p := range o.Planets {
+	for _, p := range o.Planets() {
 		ctx.drawPlanet(p)
 	}
 }
@@ -204,7 +204,7 @@ func (ctx *DrawContext) createHudSurface(o *orrery.Orrery, tpf int64) *sdl.Surfa
 		fmt.Sprintf(` Ticks/Frame: %d`, tpf),
 	}
 
-	for i, p := range o.Planets {
+	for i, p := range o.Planets() {
 		l := fmt.Sprintf(` π %d: r=%0.2f M=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f) f:%s`, i, p.R, p.M, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z, ctx.cam.SphereInFrustum(p.Pos, p.R).String())
 		lines = append(lines, l)
 	}
