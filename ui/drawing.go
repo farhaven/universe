@@ -34,7 +34,7 @@ type DrawContext struct {
 	fnt       *ttf.Font
 	wireframe bool
 
-	shutdown chan bool
+	shutdown chan struct{}
 }
 
 func initSDL() {
@@ -93,13 +93,13 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 			wireframe: true,
 			cam:       cam,
 			fnt:       fnt,
-			shutdown: make(chan bool),
+			shutdown:  make(chan struct{}),
 		}
 		c <- ctx
 
 		go ctx.EventLoop(o)
 		ctx.drawScreen(o)
-		ctx.shutdown <- true
+		close(ctx.shutdown)
 	}()
 
 	return <-c
