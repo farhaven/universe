@@ -15,6 +15,7 @@ type Planet struct {
 	Trail []vector.V3
 
 	invalid bool
+	L sync.Mutex
 }
 
 type Orrery struct {
@@ -35,6 +36,9 @@ func (o *Orrery) Planets() []*Planet {
 }
 
 func (p *Planet) move(trailLength int) {
+	p.L.Lock()
+	defer p.L.Unlock()
+
 	newPos := p.Pos.Add(p.Vel)
 
 	addToTrail := false
@@ -60,6 +64,9 @@ func (p *Planet) move(trailLength int) {
 }
 
 func (p *Planet) affectGravity(o *Orrery) {
+	p.L.Lock()
+	defer p.L.Unlock()
+
 	// G := 6.67 * math.Pow(10, -11)
 	G := float64(0.05)
 	for _, px := range o.planets {
@@ -89,9 +96,16 @@ func (o *Orrery) loop() {
 		<-o.q
 		o.l.Lock()
 
+		wg := sync.WaitGroup{}
+		wg.Add(len(o.planets))
 		for _, p := range o.planets {
-			p.affectGravity(o)
+			p := p
+			go func () {
+				defer wg.Done()
+				p.affectGravity(o)
+			}()
 		}
+		wg.Wait()
 
 		for _, p := range o.planets {
 			p.move(o.trailLength)

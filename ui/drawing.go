@@ -125,6 +125,9 @@ func (ctx *DrawContext) drawPlanets(o *orrery.Orrery) {
 }
 
 func (ctx *DrawContext) drawPlanet(p *orrery.Planet) {
+	p.L.Lock()
+	defer p.L.Unlock()
+
 	c := colorful.Hcl(math.Remainder((math.Pi/p.M)*360, 360), 0.9, 0.9)
 
 	ctx.drawSphere(p.Pos, p.R, c)
@@ -205,7 +208,9 @@ func (ctx *DrawContext) createHudSurface(o *orrery.Orrery, tpf int64) *sdl.Surfa
 	}
 
 	for i, p := range o.Planets() {
+		p.L.Lock()
 		l := fmt.Sprintf(` π %d: r=%0.2f M=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f) f:%s`, i, p.R, p.M, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z, ctx.cam.SphereInFrustum(p.Pos, p.R).String())
+		p.L.Unlock()
 		lines = append(lines, l)
 	}
 
