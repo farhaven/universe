@@ -71,7 +71,7 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 	// This is a hack to make sure all drawing stuff runs in the same goroutine
 	// XXX: This should probably be replaced by a goroutine that listens to a channel for GL commands
 	go func() {
-		/* SDL wants to run on the 'main thread' */
+		/* SDL and GL want to run on the 'main thread' */
 		runtime.LockOSThread()
 
 		w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL|sdl.WINDOW_INPUT_GRABBED)
