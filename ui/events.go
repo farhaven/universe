@@ -1,11 +1,14 @@
 package ui
 
 import (
+	"log"
+
 	"../orrery"
 
 	"fmt"
-	"github.com/veandco/go-sdl2/sdl"
 	"time"
+
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 func getNameFromKeysym(k sdl.Keysym) string {
@@ -44,11 +47,13 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery) {
 				ctx.cam.QueueCommand(CAMERA_TURN, int32(-e.XRel), int32(e.YRel))
 			case *sdl.MouseButtonEvent:
 				if e.State == sdl.RELEASED {
-					panic(fmt.Sprintf(`unexpected mouse button state %d`, e.State))
+					break
 				}
 				switch e.Button {
 				case 1:
 					o.SpawnPlanet(ctx.cam.Pos.X, ctx.cam.Pos.Y, ctx.cam.Pos.Z)
+				default:
+					log.Printf(`Unhandled mouse button %d`, e.Button)
 				}
 			case *sdl.KeyDownEvent:
 				switch getNameFromKeysym(e.Keysym) {
