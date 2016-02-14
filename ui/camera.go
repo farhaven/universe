@@ -2,8 +2,7 @@ package ui
 
 import (
 	"../vector"
-	"github.com/go-gl-legacy/gl"
-	"github.com/veandco/go-sdl2/sdl"
+	"github.com/go-gl/gl/v2.1/gl"
 	"log"
 	"math"
 )
@@ -22,8 +21,7 @@ type CameraCommand struct {
 type Camera struct {
 	cmds chan CameraCommand
 
-	screenw int
-	screenh int
+	screenw, screenh int
 
 	Pos vector.V3
 
@@ -56,7 +54,6 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 	c.frustum.farH = t * c.frustum.zFar
 	c.frustum.farW = c.frustum.farH * c.frustum.aspect
 
-	sdl.SetRelativeMouseMode(true)
 	go c.handleCommands()
 
 	return c
@@ -115,7 +112,7 @@ func (c *Camera) lookAt(at vector.V3) {
 	}
 
 	gl.MatrixMode(gl.MODELVIEW)
-	gl.LoadMatrixd(&m)
+	gl.LoadMatrixd(&m[0])
 	gl.Translated(-c.Pos.X, -c.Pos.Y, -c.Pos.Z)
 
 	// Update frustum

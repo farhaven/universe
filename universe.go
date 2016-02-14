@@ -12,7 +12,6 @@ func main() {
 
 	width, height := 1024, 768
 	ctx := ui.NewDrawContext(width, height, o)
-	defer ctx.Shutdown()
 
 	log.Println(`waiting for ui to shut down`)
 	ctx.WaitForShutdown()

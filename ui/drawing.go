@@ -5,14 +5,18 @@ import (
 	"log"
 	"math"
 	"runtime"
+	"time"
+	"unsafe"
+	"reflect"
+	"image/color"
 
+	"./text"
 	"../orrery"
 	"../vector"
 
-	"github.com/go-gl-legacy/gl"
+	"github.com/go-gl/gl/v2.1/gl"
+	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/lucasb-eyer/go-colorful"
-	"github.com/veandco/go-sdl2/sdl"
-	ttf "github.com/veandco/go-sdl2/sdl_ttf"
 )
 
 type DrawCommand int
@@ -25,44 +29,22 @@ const (
 
 type DrawContext struct {
 	width, height int
-	win           *sdl.Window
-	renderer      *sdl.Renderer
+	win           *glfw.Window
 	cmd           chan DrawCommand
 
 	cam *Camera
 
-	fnt       *ttf.Font
 	wireframe bool
 
+	txt *text.Context
 	shutdown chan struct{}
 }
 
-func initSDL() {
-	if err := sdl.Init(sdl.INIT_VIDEO); err != nil {
-		log.Fatalf(`SDL Init failed: %s`, err)
-	}
-	if err := sdl.VideoInit(sdl.GetVideoDriver(0)); err != nil {
-		log.Fatalf(`can't init video: %s`, err)
-	}
-}
-
-func loadFont() *ttf.Font {
-	if err := ttf.Init(); err != nil {
-		log.Fatalf(`can't init font system: %s`, err)
-	}
-
-	fnt, err := ttf.OpenFont("font.ttf", 12)
-	if err != nil {
-		log.Fatalf(`can't load font.ttf: %s`, err)
-	}
-
-	return fnt
-}
-
 func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
-	initSDL()
-
-	fnt := loadFont()
+	txt, err := text.NewContext("font.ttf")
+	if err != nil {
+		log.Fatalf(`can't create text context: %s`)
+	}
 
 	cam := NewCamera(width, height, -40, 40, 10)
 
@@ -74,13 +56,24 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 		/* SDL and GL want to run on the 'main thread' */
 		runtime.LockOSThread()
 
-		w, r, err := sdl.CreateWindowAndRenderer(width, height, sdl.WINDOW_OPENGL|sdl.WINDOW_INPUT_GRABBED)
+		log.Println(`initializing glfw`)
+		if err := glfw.Init(); err != nil {
+			log.Fatalln(err)
+		}
+
+		glfw.WindowHint(glfw.Resizable, 0)
+		glfw.WindowHint(glfw.Floating, 1)
+		// w, err := glfw.CreateWindow(width, height, "Universe", glfw.GetPrimaryMonitor(), nil)
+		w, err := glfw.CreateWindow(int(width), int(height), "Universe", nil, nil)
 		if err != nil {
 			log.Fatalf(`can't create window: %s`, err)
 		}
+		defer w.Destroy()
 
-		if gl.Init() != 0 {
-			log.Fatalln(`can't init GL`)
+		w.MakeContextCurrent()
+
+		if err := gl.Init(); err != nil {
+			log.Fatalln(`can't init GL: %s`, err)
 		}
 
 		gl.ClearColor(0.1, 0.1, 0.1, 0.1)
@@ -88,18 +81,20 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 
 		ctx := DrawContext{
 			width: width, height: height,
-			win: w, renderer: r,
+			win: w,
 			cmd:       make(chan DrawCommand),
 			wireframe: true,
 			cam:       cam,
-			fnt:       fnt,
+			txt: txt,
 			shutdown:  make(chan struct{}),
 		}
 		c <- ctx
 
-		go ctx.EventLoop(o)
+		eventShutdown := make(chan struct{})
+		go ctx.EventLoop(o, eventShutdown)
 		ctx.drawScreen(o)
 		close(ctx.shutdown)
+		<-eventShutdown
 	}()
 
 	return <-c
@@ -110,8 +105,7 @@ func (ctx *DrawContext) WaitForShutdown() {
 }
 
 func (ctx *DrawContext) Shutdown() {
-	sdl.VideoQuit()
-	sdl.Quit()
+	glfw.Terminate()
 }
 
 func (ctx *DrawContext) QueueCommand(cmd DrawCommand) {
@@ -195,9 +189,7 @@ func (ctx *DrawContext) drawGrid() {
 	}
 }
 
-func (ctx *DrawContext) createHudSurface(o *orrery.Orrery, tpf int64) *sdl.Surface {
-	color := sdl.Color{0, 255, 255, 255}
-
+func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, tpf int64) (uint32, [2]int, error) {
 	lines := []string{
 		"WASD: Move, 1: Toggle wireframe, F: Fullscreen, Q: Quit",
 		"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
@@ -214,47 +206,36 @@ func (ctx *DrawContext) createHudSurface(o *orrery.Orrery, tpf int64) *sdl.Surfa
 		lines = append(lines, l)
 	}
 
-	w, h := int32(0), int32(0)
-	surfaces := []*sdl.Surface{}
-	for _, l := range lines {
-		s, err := ctx.fnt.RenderUTF8_Blended(l, color)
-		if err != nil {
-			log.Fatalf(`can't render text: %s`, err)
-		}
-		defer s.Free()
-		surfaces = append(surfaces, s)
+	var txt uint32
+	gl.GenTextures(1, &txt)
 
-		if s.W > w {
-			w = s.W
-		}
-		h += s.H
-	}
+	gl.BindTexture(gl.TEXTURE_2D, txt)
 
-	fmt := surfaces[0].Format
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 0)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, 0)
 
-	srf, err := sdl.CreateRGBSurface(0, w, h, 32, fmt.Rmask, fmt.Gmask, fmt.Bmask, fmt.Amask)
+	bg := color.RGBA{0, 0, 0, 0}
+	fg := color.RGBA{0, 255, 255, 255}
+	img, err := ctx.txt.RenderMultiline(lines, 12.5, bg, fg)
 	if err != nil {
-		log.Fatalf(`can't create SDL surface: %s`, err)
+		return 0, [2]int{0, 0}, err
 	}
-	srf.FillRect(nil, sdl.MapRGBA(srf.Format, 0, 0, 0, 255))
+	v := reflect.ValueOf(img.Pix)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA,
+	              int32(img.Bounds().Dx()), int32(img.Bounds().Dy()),
+	              0, gl.RGBA, gl.UNSIGNED_BYTE, unsafe.Pointer(v.Index(0).UnsafeAddr()))
 
-	y := int32(0)
-	for _, s := range surfaces {
-		s.Blit(nil, srf, &sdl.Rect{Y: y, W: s.W, H: s.H})
-		y += s.H
-	}
-
-	return srf
+	return txt, [2]int{img.Bounds().Dx(), img.Bounds().Dy()}, nil
 }
 
 func (ctx *DrawContext) drawHud(o *orrery.Orrery, tpf int64) {
-	srf := ctx.createHudSurface(o, tpf)
-	defer srf.Free()
-
-	txt, err := ctx.renderer.CreateTextureFromSurface(srf)
+	txt, size, err := ctx.createHudTexture(o, tpf)
 	if err != nil {
 		log.Fatalf(`can't create texture from text surface: %s`, err)
 	}
+	defer gl.DeleteTextures(1, &txt)
 
 	gl.MatrixMode(gl.PROJECTION)
 	gl.PushMatrix()
@@ -264,22 +245,20 @@ func (ctx *DrawContext) drawHud(o *orrery.Orrery, tpf int64) {
 	gl.LoadIdentity()
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
 
-	txt.GL_BindTexture(nil, nil)
-	defer txt.GL_UnbindTexture()
+	gl.BindTexture(gl.TEXTURE_2D, txt)
+	gl.Enable(gl.TEXTURE_2D)
+	defer gl.Disable(gl.TEXTURE_2D)
 
 	gl.Color3f(1, 1, 1)
 	gl.Begin(gl.QUADS)
 	gl.TexCoord2f(0, 0)
 	gl.Vertex2f(0.0, 0.0)
 	gl.TexCoord2f(1, 0)
-	gl.Vertex2f(float32(srf.W), 0.0)
+	gl.Vertex2f(float32(size[0]), 0.0)
 	gl.TexCoord2f(1, 1)
-	gl.Vertex2f(float32(srf.W), float32(srf.H))
+	gl.Vertex2f(float32(size[0]), float32(size[1]))
 	gl.TexCoord2f(0, 1)
-	gl.Vertex2f(0.0, float32(srf.H))
-	if err = ctx.renderer.Copy(txt, nil, &sdl.Rect{W: srf.W, H: srf.H}); err != nil {
-		log.Fatalf(`can't copy texture: %s`, err)
-	}
+	gl.Vertex2f(0.0, float32(size[1]))
 	gl.End()
 
 	gl.PopMatrix()
@@ -288,7 +267,7 @@ func (ctx *DrawContext) drawHud(o *orrery.Orrery, tpf int64) {
 func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 	fullscreen := false
 
-	gl.Viewport(0, 0, ctx.width, ctx.height)
+	gl.Viewport(0, 0, int32(ctx.width), int32(ctx.height))
 	gl.Hint(gl.PERSPECTIVE_CORRECTION_HINT, gl.NICEST)
 
 	gl.MatrixMode(gl.MODELVIEW)
@@ -300,7 +279,7 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 	tpf := int64(0)
 
 	for {
-		ticks_start := sdl.GetTicks()
+		ticks_start := glfw.GetTime()
 		o.Step()
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -308,7 +287,7 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 		ctx.drawGrid()
 		ctx.drawPlanets(o)
 		ctx.drawHud(o, tpf)
-		ctx.renderer.Present()
+		ctx.win.SwapBuffers()
 
 		select {
 		case cmd := <-ctx.cmd:
@@ -316,11 +295,13 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 			case DRAW_QUIT:
 				return
 			case DRAW_FULLSCREEN:
+				/*
 				if fullscreen {
 					ctx.win.SetFullscreen(0)
 				} else {
 					ctx.win.SetFullscreen(sdl.WINDOW_FULLSCREEN)
 				}
+				*/
 				fullscreen = !fullscreen
 			case DRAW_TOGGLE_WIREFRAME:
 				ctx.wireframe = !ctx.wireframe
@@ -329,7 +310,7 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 			/* ignore */
 		}
 
-		tickdelta := int64(sdl.GetTicks()) - int64(ticks_start)
+		tickdelta := int64(glfw.GetTime()) - int64(ticks_start)
 		if tickdelta <= 0 {
 			tickdelta = 1
 		}
@@ -339,6 +320,6 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 			tickdelta = 1
 		}
 
-		sdl.Delay(uint32(tickdelta))
+		time.Sleep(time.Duration(tickdelta) * time.Millisecond)
 	}
 }

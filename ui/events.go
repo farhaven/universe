@@ -2,114 +2,87 @@ package ui
 
 import (
 	"log"
+	"time"
 
 	"../orrery"
 
-	"fmt"
-	"time"
-
-	"github.com/veandco/go-sdl2/sdl"
+	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
-func getNameFromKeysym(k sdl.Keysym) string {
-	return sdl.GetKeyName(sdl.Keycode(k.Sym))
-}
-
-func (ctx *DrawContext) EventLoop(o *orrery.Orrery) {
-	sdl.SetEventFilterFunc(func(e sdl.Event) bool {
-		switch e.(type) {
-		case *sdl.QuitEvent:
-			return true
-		case *sdl.KeyDownEvent:
-			return true
-		case *sdl.MouseWheelEvent, *sdl.MouseMotionEvent, *sdl.MouseButtonEvent:
-			return true
+func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
+	ctx.win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if action != glfw.Press {
+			return
 		}
-		return false
+		switch key {
+		case glfw.KeyQ:
+			ctx.QueueCommand(DRAW_QUIT)
+		case glfw.KeyF:
+			ctx.QueueCommand(DRAW_FULLSCREEN)
+		case glfw.Key1:
+			ctx.QueueCommand(DRAW_TOGGLE_WIREFRAME)
+		case glfw.KeySpace:
+			ctx.cam.QueueCommand(CAMERA_DROP, 0, 0)
+		case glfw.KeyP:
+			panic("user requested panic")
+		default:
+			log.Printf(`key: key:%v s:%v a:%v m:%v`, key, scancode, action, mods)
+		}
 	})
 
-	events := make(chan sdl.Event)
-	go func() {
-		for {
-			events <- sdl.WaitEvent()
+	cursorx, cursory := float64(0), float64(0)
+	ctx.win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+	ctx.win.SetCursorPosCallback(func(w *glfw.Window, xpos float64, ypos float64) {
+		xrel := cursorx - xpos
+		yrel := cursory - ypos
+		ctx.cam.QueueCommand(CAMERA_TURN, int32(xrel), int32(-yrel))
+		cursorx, cursory = xpos, ypos
+	})
+	ctx.win.SetScrollCallback(func(w *glfw.Window, xoff float64, yoff float64) {
+		ctx.cam.QueueCommand(CAMERA_MOVE, 0, int32(-yoff*10))
+	})
+	ctx.win.SetMouseButtonCallback(func(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
+		if action != glfw.Press {
+			return
 		}
-	}()
+		if button == 0 {
+			o.SpawnPlanet(ctx.cam.Pos.X, ctx.cam.Pos.Y, ctx.cam.Pos.Z)
+		} else {
+			log.Printf(`mouse btn: button:%v action:%v mod:%v`, button, action, mod)
+		}
+	})
 
 	for {
+		if ctx.win.ShouldClose() {
+			ctx.QueueCommand(DRAW_QUIT)
+			return
+		}
+
 		select {
-		case e := <-events:
-			switch e := e.(type) {
-			default:
-				panic(fmt.Sprintf(`unknown event of type %T received`, e))
-			case *sdl.MouseWheelEvent:
-				ctx.cam.QueueCommand(CAMERA_MOVE, 0, -e.Y*10)
-			case *sdl.MouseMotionEvent:
-				ctx.cam.QueueCommand(CAMERA_TURN, int32(-e.XRel), int32(e.YRel))
-			case *sdl.MouseButtonEvent:
-				if e.State == sdl.RELEASED {
-					break
-				}
-				switch e.Button {
-				case 1:
-					o.SpawnPlanet(ctx.cam.Pos.X, ctx.cam.Pos.Y, ctx.cam.Pos.Z)
-				default:
-					log.Printf(`Unhandled mouse button %d`, e.Button)
-				}
-			case *sdl.KeyDownEvent:
-				switch getNameFromKeysym(e.Keysym) {
-				case `Q`:
-					ctx.QueueCommand(DRAW_QUIT)
-					return
-				case `F`:
-					ctx.QueueCommand(DRAW_FULLSCREEN)
-				case `1`:
-					ctx.QueueCommand(DRAW_TOGGLE_WIREFRAME)
-				case `Space`:
-					ctx.cam.QueueCommand(CAMERA_DROP, 0, 0)
-				case `P`:
-					panic("user requested panic")
-				}
-			case *sdl.QuitEvent:
-				ctx.QueueCommand(DRAW_QUIT)
-				return
+		case <-ctx.shutdown:
+			close(shutdown)
+			return
+		default:
+		}
+
+		glfw.PollEvents()
+
+		cameraCommands := map[glfw.Key]CameraCommand{
+			glfw.KeyW:     CameraCommand{CAMERA_MOVE, 0, 1},
+			glfw.KeyS:     CameraCommand{CAMERA_MOVE, 0, -1},
+			glfw.KeyA:     CameraCommand{CAMERA_MOVE, 1, 0},
+			glfw.KeyD:     CameraCommand{CAMERA_MOVE, -1, 0},
+			glfw.KeyLeft:  CameraCommand{CAMERA_TURN, 10, 0},
+			glfw.KeyRight: CameraCommand{CAMERA_TURN, -10, 0},
+			glfw.KeyUp:    CameraCommand{CAMERA_TURN, 0, -10},
+			glfw.KeyDown:  CameraCommand{CAMERA_TURN, 0, 10},
+		}
+		for k, cmd := range cameraCommands {
+			if ctx.win.GetKey(k) == glfw.Press {
+				ctx.cam.QueueCommand(cmd.Type, cmd.X, cmd.Y)
 			}
-		case <-time.After(5 * time.Millisecond):
 		}
-		keys := func() []bool {
-			k := sdl.GetKeyboardState()
-			r := make([]bool, len(k))
-			for i, v := range k {
-				if v == 1 {
-					r[i] = true
-				} else {
-					r[i] = false
-				}
-			}
-			return r
-		}()
-		if keys[sdl.SCANCODE_W] {
-			ctx.cam.QueueCommand(CAMERA_MOVE, 0, 1)
-		}
-		if keys[sdl.SCANCODE_S] {
-			ctx.cam.QueueCommand(CAMERA_MOVE, 0, -1)
-		}
-		if keys[sdl.SCANCODE_A] {
-			ctx.cam.QueueCommand(CAMERA_MOVE, 1, 0)
-		}
-		if keys[sdl.SCANCODE_D] {
-			ctx.cam.QueueCommand(CAMERA_MOVE, -1, 0)
-		}
-		if keys[sdl.SCANCODE_LEFT] {
-			ctx.cam.QueueCommand(CAMERA_TURN, 10, 0)
-		}
-		if keys[sdl.SCANCODE_RIGHT] {
-			ctx.cam.QueueCommand(CAMERA_TURN, -10, 0)
-		}
-		if keys[sdl.SCANCODE_UP] {
-			ctx.cam.QueueCommand(CAMERA_TURN, 0, int32(-10))
-		}
-		if keys[sdl.SCANCODE_DOWN] {
-			ctx.cam.QueueCommand(CAMERA_TURN, 0, int32(+10))
-		}
+
+		time.Sleep(5 * time.Millisecond)
 	}
 }

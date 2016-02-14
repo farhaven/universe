@@ -2,15 +2,15 @@ package ui
 
 import (
 	"./vector"
-	"github.com/go-gl-legacy/gl"
+	"github.com/go-gl/gl/v2.1/gl"
 	"log"
 	"os"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-	if r := gl.Init(); r != 1 {
-		log.Fatalf(`can't init GL: %d`, r)
+	if err := gl.Init(); err != nil {
+		log.Fatalf(`can't init GL: %s`, err)
 	}
 	os.Exit(m.Run())
 }
