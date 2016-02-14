@@ -2,17 +2,17 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 	"math"
+	"reflect"
 	"runtime"
 	"time"
 	"unsafe"
-	"reflect"
-	"image/color"
 
-	"./text"
 	"../orrery"
 	"../vector"
+	"./text"
 
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -36,8 +36,10 @@ type DrawContext struct {
 
 	wireframe bool
 
-	txt *text.Context
+	txt      *text.Context
 	shutdown chan struct{}
+
+	spheres map[int]uint32
 }
 
 func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
@@ -81,12 +83,13 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 
 		ctx := DrawContext{
 			width: width, height: height,
-			win: w,
+			win:       w,
 			cmd:       make(chan DrawCommand),
 			wireframe: true,
 			cam:       cam,
-			txt: txt,
+			txt:       txt,
 			shutdown:  make(chan struct{}),
+			spheres: make(map[int]uint32),
 		}
 		c <- ctx
 
@@ -126,11 +129,16 @@ func (ctx *DrawContext) drawPlanet(p *orrery.Planet) {
 
 	ctx.drawSphere(p.Pos, p.R, c)
 	for i, pos := range p.Trail {
-		ctx.drawSphere(pos, 1 / float64(len(p.Trail) - i + 1), c)
+		ctx.drawSphere(pos, 1/float64(len(p.Trail)-i+1), c)
 	}
 }
 
 func (ctx *DrawContext) drawSphere(p vector.V3, r float64, c colorful.Color) {
+	/* TODO:
+	   - decrease sphere detail if it's further away
+	   - only draw spheres that would be visible inside the frustum:
+	     - (no small spheres near the far plane)
+	*/
 	if ctx.cam.SphereInFrustum(p, r) == OUTSIDE {
 		return
 	}
@@ -146,32 +154,42 @@ func (ctx *DrawContext) drawSphere(p vector.V3, r float64, c colorful.Color) {
 	gl.Translated(p.X, p.Y, p.Z)
 	gl.Scaled(r, r, r)
 
-	for i := 0; i <= slices; i++ {
-		lat0 := math.Pi * (-0.5 + float64(i-1)/float64(slices))
-		z0 := math.Sin(lat0)
-		zr0 := math.Cos(lat0)
+	l, ok := ctx.spheres[slices]
 
-		lat1 := math.Pi * (-0.5 + float64(i)/float64(slices))
-		z1 := math.Sin(lat1)
-		zr1 := math.Cos(lat1)
+	if !ok {
+		gl.NewList(uint32(slices), gl.COMPILE)
+		for i := 0; i <= slices; i++ {
+			lat0 := math.Pi * (-0.5 + float64(i-1)/float64(slices))
+			z0 := math.Sin(lat0)
+			zr0 := math.Cos(lat0)
 
-		if ctx.wireframe {
-			gl.Begin(gl.LINES)
-		} else {
-			gl.Begin(gl.QUAD_STRIP)
+			lat1 := math.Pi * (-0.5 + float64(i)/float64(slices))
+			z1 := math.Sin(lat1)
+			zr1 := math.Cos(lat1)
+
+			if ctx.wireframe {
+				gl.Begin(gl.LINES)
+			} else {
+				gl.Begin(gl.QUAD_STRIP)
+			}
+			for j := 0; j <= slices; j++ {
+				lng := 2 * math.Pi * (float64(j-1) / float64(slices))
+				x := math.Cos(lng)
+				y := math.Sin(lng)
+
+				gl.Normal3f(float32(x*zr0), float32(y*zr0), float32(z0))
+				gl.Vertex3f(float32(x*zr0), float32(y*zr0), float32(z0))
+				gl.Normal3f(float32(x*zr1), float32(y*zr1), float32(z1))
+				gl.Vertex3f(float32(x*zr1), float32(y*zr1), float32(z1))
+			}
+			gl.End()
 		}
-		for j := 0; j <= slices; j++ {
-			lng := 2 * math.Pi * (float64(j-1) / float64(slices))
-			x := math.Cos(lng)
-			y := math.Sin(lng)
-
-			gl.Normal3f(float32(x*zr0), float32(y*zr0), float32(z0))
-			gl.Vertex3f(float32(x*zr0), float32(y*zr0), float32(z0))
-			gl.Normal3f(float32(x*zr1), float32(y*zr1), float32(z1))
-			gl.Vertex3f(float32(x*zr1), float32(y*zr1), float32(z1))
-		}
-		gl.End()
+		gl.EndList()
+		l = uint32(slices)
+		ctx.spheres[slices] = l
 	}
+
+	gl.CallList(l)
 }
 
 func (ctx *DrawContext) drawGrid() {
@@ -189,14 +207,14 @@ func (ctx *DrawContext) drawGrid() {
 	}
 }
 
-func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, tpf int64) (uint32, [2]int, error) {
+func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, frametime time.Duration) (uint32, [2]int, error) {
 	lines := []string{
 		"WASD: Move, 1: Toggle wireframe, F: Fullscreen, Q: Quit",
 		"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
 		"P: panic and dump stacks",
 		fmt.Sprintf(` α: %0.2f θ: %0.2f`, ctx.cam.alpha, ctx.cam.theta),
 		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, ctx.cam.Pos.X, ctx.cam.Pos.Y, ctx.cam.Pos.Z),
-		fmt.Sprintf(` Ticks/Frame: %d`, tpf),
+		fmt.Sprintf(` Last frame time: %s`, frametime),
 	}
 
 	for i, p := range o.Planets() {
@@ -224,14 +242,14 @@ func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, tpf int64) (uint32, [
 	}
 	v := reflect.ValueOf(img.Pix)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA,
-	              int32(img.Bounds().Dx()), int32(img.Bounds().Dy()),
-	              0, gl.RGBA, gl.UNSIGNED_BYTE, unsafe.Pointer(v.Index(0).UnsafeAddr()))
+		int32(img.Bounds().Dx()), int32(img.Bounds().Dy()),
+		0, gl.RGBA, gl.UNSIGNED_BYTE, unsafe.Pointer(v.Index(0).UnsafeAddr()))
 
 	return txt, [2]int{img.Bounds().Dx(), img.Bounds().Dy()}, nil
 }
 
-func (ctx *DrawContext) drawHud(o *orrery.Orrery, tpf int64) {
-	txt, size, err := ctx.createHudTexture(o, tpf)
+func (ctx *DrawContext) drawHud(o *orrery.Orrery, frametime time.Duration) {
+	txt, size, err := ctx.createHudTexture(o, frametime)
 	if err != nil {
 		log.Fatalf(`can't create texture from text surface: %s`, err)
 	}
@@ -274,19 +292,29 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 	gl.LoadIdentity()
 	gl.Translatef(0, 0, 0)
 
-	target_tpf := 24
-	ticks_per_frame := int64(1000 / target_tpf)
-	tpf := int64(0)
+	t_delta := time.Duration(0)
+	frametime := time.Second / 24
+	log.Printf(`ft: %v`, frametime)
+
+	frametimes := time.Duration(0)
+	nsamples := 0
+	slowest_frame := time.Duration(0)
+	frames_over_deadline := 0
+
+	defer func() {
+		log.Printf(`average frame time: %v, #sample: %d`, frametimes / time.Duration(nsamples), nsamples)
+		log.Printf(`slowest frame: %v, # of frames over %v: %d`, slowest_frame, frametime, frames_over_deadline)
+	}()
 
 	for {
-		ticks_start := glfw.GetTime()
+		t_start := time.Now()
 		o.Step()
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		ctx.cam.Update()
 		ctx.drawGrid()
 		ctx.drawPlanets(o)
-		ctx.drawHud(o, tpf)
+		ctx.drawHud(o, t_delta)
 		ctx.win.SwapBuffers()
 
 		select {
@@ -296,11 +324,11 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 				return
 			case DRAW_FULLSCREEN:
 				/*
-				if fullscreen {
-					ctx.win.SetFullscreen(0)
-				} else {
-					ctx.win.SetFullscreen(sdl.WINDOW_FULLSCREEN)
-				}
+					if fullscreen {
+						ctx.win.SetFullscreen(0)
+					} else {
+						ctx.win.SetFullscreen(sdl.WINDOW_FULLSCREEN)
+					}
 				*/
 				fullscreen = !fullscreen
 			case DRAW_TOGGLE_WIREFRAME:
@@ -310,16 +338,18 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 			/* ignore */
 		}
 
-		tickdelta := int64(glfw.GetTime()) - int64(ticks_start)
-		if tickdelta <= 0 {
-			tickdelta = 1
+		t_delta = time.Since(t_start)
+		frametimes += t_delta
+		nsamples++
+		if t_delta > slowest_frame {
+			slowest_frame = t_delta
 		}
-		tpf = tickdelta
-		tickdelta = ticks_per_frame - tickdelta
-		if tickdelta <= 0 {
-			tickdelta = 1
+		if t_delta > frametime {
+			frames_over_deadline++
 		}
-
-		time.Sleep(time.Duration(tickdelta) * time.Millisecond)
+		t_sleep := frametime.Nanoseconds() - t_delta.Nanoseconds()
+		if t_sleep > 0 {
+			time.Sleep(time.Duration(t_sleep) * time.Nanosecond)
+		}
 	}
 }

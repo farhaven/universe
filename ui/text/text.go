@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"image/draw"
 	"io/ioutil"
-	"math"
 	"os"
 
 	"github.com/golang/freetype"
@@ -50,7 +49,7 @@ func (i infiniteImage) ColorModel() color.Model {
 	return color.RGBAModel
 }
 func (i infiniteImage) Bounds() image.Rectangle {
-	return image.Rect(int(math.MinInt32), int(math.MinInt32), int(math.MaxInt32), int(math.MaxInt32))
+	return image.Rect(0, 0, 1, 1)
 }
 func (i infiniteImage) At(x, y int) color.Color {
 	return color.Black

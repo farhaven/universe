@@ -2,12 +2,22 @@ package main
 
 import (
 	"log"
+	"os"
+	"runtime/pprof"
 
 	"./orrery"
 	"./ui"
 )
 
 func main() {
+	f, err := os.Create("cpuprofile.prof")
+	if err != nil {
+		log.Printf(`can't create CPU profile: %s`, err)
+	}
+	defer f.Close()
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	o := orrery.New()
 
 	width, height := 1024, 768
