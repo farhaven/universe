@@ -39,7 +39,10 @@ type DrawContext struct {
 	txt      *text.Context
 	shutdown chan struct{}
 
-	spheres map[int]uint32
+	spheresWireframe map[int]uint32
+	spheresSolid map[int]uint32
+
+	listId uint32 // ID of the next free call list
 }
 
 func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
@@ -89,7 +92,8 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 			cam:       cam,
 			txt:       txt,
 			shutdown:  make(chan struct{}),
-			spheres: make(map[int]uint32),
+			spheresWireframe: make(map[int]uint32),
+			spheresSolid: make(map[int]uint32),
 		}
 		c <- ctx
 
@@ -154,10 +158,17 @@ func (ctx *DrawContext) drawSphere(p vector.V3, r float64, c colorful.Color) {
 	gl.Translated(p.X, p.Y, p.Z)
 	gl.Scaled(r, r, r)
 
-	l, ok := ctx.spheres[slices]
+	l, ok := uint32(0), false
+	if ctx.wireframe {
+		l, ok = ctx.spheresWireframe[slices]
+	} else {
+		l, ok = ctx.spheresSolid[slices]
+	}
 
 	if !ok {
-		gl.NewList(uint32(slices), gl.COMPILE)
+		ctx.listId++ // XXX: atomic?
+		l = ctx.listId
+		gl.NewList(l, gl.COMPILE)
 		for i := 0; i <= slices; i++ {
 			lat0 := math.Pi * (-0.5 + float64(i-1)/float64(slices))
 			z0 := math.Sin(lat0)
@@ -185,8 +196,11 @@ func (ctx *DrawContext) drawSphere(p vector.V3, r float64, c colorful.Color) {
 			gl.End()
 		}
 		gl.EndList()
-		l = uint32(slices)
-		ctx.spheres[slices] = l
+		if ctx.wireframe {
+			ctx.spheresWireframe[slices] = l
+		} else {
+			ctx.spheresSolid[slices] = l
+		}
 	}
 
 	gl.CallList(l)
