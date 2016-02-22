@@ -43,18 +43,18 @@ func int26_6ToFloat64(i fixed.Int26_6) float64 {
 	return float64(i>>6) + 1/(float64(i&((1<<7)-1))+1)
 }
 
-type infiniteImage struct{}
+type nullImage struct{}
 
-func (i infiniteImage) ColorModel() color.Model {
+func (i nullImage) ColorModel() color.Model {
 	return color.RGBAModel
 }
-func (i infiniteImage) Bounds() image.Rectangle {
+func (i nullImage) Bounds() image.Rectangle {
 	return image.Rect(0, 0, 1, 1)
 }
-func (i infiniteImage) At(x, y int) color.Color {
+func (i nullImage) At(x, y int) color.Color {
 	return color.Black
 }
-func (i infiniteImage) Set(x, y int, c color.Color) {
+func (i nullImage) Set(x, y int, c color.Color) {
 }
 
 func (c *Context) Render(txt string, size float64, col color.Color) (*image.RGBA, error) {
@@ -62,7 +62,7 @@ func (c *Context) Render(txt string, size float64, col color.Color) (*image.RGBA
 	c.ft.SetFontSize(size)
 
 	/* Render image to temporary buffer to determine final size */
-	tmp := infiniteImage{}
+	tmp := nullImage{}
 	c.ft.SetDst(tmp)
 	c.ft.SetClip(tmp.Bounds())
 	p, err := c.ft.DrawString(txt, fixed.P(0, int(size+0.5)))
