@@ -3,6 +3,7 @@ package orrery
 import (
 	"../vector"
 	"math"
+	"time"
 	"sync"
 )
 
@@ -23,6 +24,7 @@ type Orrery struct {
 	trailLength int
 	q           chan bool
 	l           sync.Mutex
+	looptime    time.Duration
 }
 
 func (o *Orrery) Planets() []*Planet {
@@ -87,13 +89,9 @@ func (p *Planet) affectGravity(o *Orrery) {
 	}
 }
 
-func (o *Orrery) Step() {
-	o.q <- true
-}
-
 func (o *Orrery) loop() {
 	for {
-		<-o.q
+		t_start := time.Now()
 		o.l.Lock()
 
 		wg := sync.WaitGroup{}
@@ -148,6 +146,9 @@ func (o *Orrery) loop() {
 		}
 		o.planets = pl
 		o.l.Unlock()
+
+		t_sleep := o.looptime.Nanoseconds() - time.Since(t_start).Nanoseconds()
+		time.Sleep(time.Duration(t_sleep) * time.Nanosecond)
 	}
 }
 
@@ -165,6 +166,7 @@ func New() *Orrery {
 			&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
 		},
 		trailLength: 20,
+		looptime: 5 * time.Millisecond,
 
 		q: make(chan bool),
 	}

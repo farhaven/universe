@@ -322,7 +322,6 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 
 	for {
 		t_start := time.Now()
-		o.Step()
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		ctx.cam.Update()
