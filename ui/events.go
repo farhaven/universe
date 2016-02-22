@@ -21,6 +21,8 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 			ctx.QueueCommand(DRAW_FULLSCREEN)
 		case glfw.Key1:
 			ctx.QueueCommand(DRAW_TOGGLE_WIREFRAME)
+		case glfw.KeyH:
+			ctx.QueueCommand(DRAW_TOGGLE_VERBOSE)
 		case glfw.KeySpace:
 			ctx.cam.QueueCommand(cameraCommandDrop{})
 		case glfw.KeyP:

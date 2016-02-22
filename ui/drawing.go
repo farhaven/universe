@@ -25,6 +25,7 @@ const (
 	DRAW_QUIT = iota
 	DRAW_FULLSCREEN
 	DRAW_TOGGLE_WIREFRAME
+	DRAW_TOGGLE_VERBOSE
 )
 
 type DrawContext struct {
@@ -35,6 +36,7 @@ type DrawContext struct {
 	cam *Camera
 
 	wireframe bool
+	verbose bool
 
 	txt      *text.Context
 	shutdown chan struct{}
@@ -89,6 +91,7 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 			win:       w,
 			cmd:       make(chan DrawCommand),
 			wireframe: true,
+			verbose: true,
 			cam:       cam,
 			txt:       txt,
 			shutdown:  make(chan struct{}),
@@ -222,20 +225,29 @@ func (ctx *DrawContext) drawGrid() {
 }
 
 func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, frametime time.Duration) (uint32, [2]int, error) {
-	lines := []string{
-		"WASD: Move, 1: Toggle wireframe, F: Fullscreen, Q: Quit",
-		"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
-		"P: panic and dump stacks",
+	lines := []string{}
+
+	if ctx.verbose {
+		lines = append(lines, []string{
+			"WASD: Move, 1: Toggle wireframe, F: Fullscreen, H: Toggle HUD verbosity, Q: Quit",
+			"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
+			"P: panic and dump stacks",
+		}...)
+	}
+
+	lines = append(lines, []string{
 		fmt.Sprintf(` α: %0.2f θ: %0.2f`, ctx.cam.alpha, ctx.cam.theta),
 		fmt.Sprintf(` x: %0.2f y: %0.2f z: %0.2f`, ctx.cam.Pos.X, ctx.cam.Pos.Y, ctx.cam.Pos.Z),
 		fmt.Sprintf(` Last frame time: %s`, frametime),
-	}
+	}...)
 
-	for i, p := range o.Planets() {
-		p.L.Lock()
-		l := fmt.Sprintf(` π %d: r=%0.2f M=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.R, p.M, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z)
-		p.L.Unlock()
-		lines = append(lines, l)
+	if ctx.verbose {
+		for i, p := range o.Planets() {
+			p.L.Lock()
+			l := fmt.Sprintf(` π %d: r=%0.2f M=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.R, p.M, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z)
+			p.L.Unlock()
+			lines = append(lines, l)
+		}
 	}
 
 	var txt uint32
@@ -346,6 +358,8 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 				fullscreen = !fullscreen
 			case DRAW_TOGGLE_WIREFRAME:
 				ctx.wireframe = !ctx.wireframe
+			case DRAW_TOGGLE_VERBOSE:
+				ctx.verbose = !ctx.verbose
 			}
 		default:
 			/* ignore */
