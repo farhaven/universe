@@ -22,7 +22,7 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 		case glfw.Key1:
 			ctx.QueueCommand(DRAW_TOGGLE_WIREFRAME)
 		case glfw.KeySpace:
-			ctx.cam.QueueCommand(CAMERA_DROP, 0, 0)
+			ctx.cam.QueueCommand(cameraCommandDrop{})
 		case glfw.KeyP:
 			panic("user requested panic")
 		default:
@@ -35,11 +35,11 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 	ctx.win.SetCursorPosCallback(func(w *glfw.Window, xpos float64, ypos float64) {
 		xrel := cursorx - xpos
 		yrel := cursory - ypos
-		ctx.cam.QueueCommand(CAMERA_TURN, int32(xrel), int32(-yrel))
+		ctx.cam.QueueCommand(cameraCommandTurn{int32(xrel), int32(-yrel)})
 		cursorx, cursory = xpos, ypos
 	})
 	ctx.win.SetScrollCallback(func(w *glfw.Window, xoff float64, yoff float64) {
-		ctx.cam.QueueCommand(CAMERA_MOVE, 0, int32(-yoff*10))
+		ctx.cam.QueueCommand(cameraCommandMove{0, int32(-yoff*10)})
 	})
 	ctx.win.SetMouseButtonCallback(func(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 		if action != glfw.Press {
@@ -67,19 +67,19 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 
 		glfw.PollEvents()
 
-		cameraCommands := map[glfw.Key]CameraCommand{
-			glfw.KeyW:     CameraCommand{CAMERA_MOVE, 0, 1},
-			glfw.KeyS:     CameraCommand{CAMERA_MOVE, 0, -1},
-			glfw.KeyA:     CameraCommand{CAMERA_MOVE, 1, 0},
-			glfw.KeyD:     CameraCommand{CAMERA_MOVE, -1, 0},
-			glfw.KeyLeft:  CameraCommand{CAMERA_TURN, 10, 0},
-			glfw.KeyRight: CameraCommand{CAMERA_TURN, -10, 0},
-			glfw.KeyUp:    CameraCommand{CAMERA_TURN, 0, -10},
-			glfw.KeyDown:  CameraCommand{CAMERA_TURN, 0, 10},
+		cameraCommands := map[glfw.Key]cameraCommand{
+			glfw.KeyW:     cameraCommandMove{0, 1},
+			glfw.KeyS:     cameraCommandMove{0, -1},
+			glfw.KeyA:     cameraCommandMove{1, 0},
+			glfw.KeyD:     cameraCommandMove{-1, 0},
+			glfw.KeyLeft:  cameraCommandTurn{10, 0},
+			glfw.KeyRight: cameraCommandTurn{-10, 0},
+			glfw.KeyUp:    cameraCommandTurn{0, -10},
+			glfw.KeyDown:  cameraCommandTurn{0, 10},
 		}
 		for k, cmd := range cameraCommands {
 			if ctx.win.GetKey(k) == glfw.Press {
-				ctx.cam.QueueCommand(cmd.Type, cmd.X, cmd.Y)
+				ctx.cam.QueueCommand(cmd)
 			}
 		}
 

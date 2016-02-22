@@ -7,19 +7,17 @@ import (
 	"math"
 )
 
-const (
-	CAMERA_TURN = iota
-	CAMERA_MOVE
-	CAMERA_DROP
-)
-
-type CameraCommand struct {
-	Type int
-	X    int32
-	Y    int32
+type cameraCommand interface{}
+type cameraCommandMove struct {
+	X, Y    int32
 }
+type cameraCommandTurn struct {
+	X, Y int32
+}
+type cameraCommandDrop struct{}
+
 type Camera struct {
-	cmds chan CameraCommand
+	cmds chan cameraCommand
 
 	screenw, screenh int
 
@@ -39,7 +37,7 @@ type Camera struct {
 
 func NewCamera(width, height int, x, y, z float64) *Camera {
 	c := &Camera{
-		cmds:    make(chan CameraCommand),
+		cmds:    make(chan cameraCommand),
 		screenw: width, screenh: height,
 		Pos: vector.V3{x, y, z},
 	}
@@ -165,8 +163,8 @@ func (c *Camera) Update() {
 func (c *Camera) handleCommands() {
 	Pi2 := math.Pi / 2
 	for cmd := range c.cmds {
-		switch cmd.Type {
-		case CAMERA_TURN:
+		switch cmd := cmd.(type) {
+		case cameraCommandTurn:
 			if cmd.X != 0 {
 				c.alpha += float64(cmd.X) / (float64(c.screenw) / Pi2)
 				c.alpha = math.Remainder(c.alpha, 2*math.Pi)
@@ -174,7 +172,7 @@ func (c *Camera) handleCommands() {
 				c.theta -= float64(cmd.Y) / (float64(c.screenh) / Pi2)
 				c.theta = math.Max(-Pi2, math.Min(Pi2, c.theta))
 			}
-		case CAMERA_MOVE:
+		case cameraCommandMove:
 			if cmd.Y != 0 {
 				c.Pos.X += float64(cmd.Y) * math.Cos(c.alpha)
 				c.Pos.Y += float64(cmd.Y) * math.Sin(c.alpha)
@@ -183,11 +181,11 @@ func (c *Camera) handleCommands() {
 				c.Pos.X += float64(cmd.X) * math.Cos(c.alpha+Pi2)
 				c.Pos.Y += float64(cmd.X) * math.Sin(c.alpha+Pi2)
 			}
-		case CAMERA_DROP:
+		case cameraCommandDrop:
 			c.Pos.Z = 0
 		}
 	}
 }
-func (c *Camera) QueueCommand(type_ int, x, y int32) {
-	c.cmds <- CameraCommand{type_, x, y}
+func (c *Camera) QueueCommand(cmd cameraCommand) {
+	c.cmds <- cmd
 }
