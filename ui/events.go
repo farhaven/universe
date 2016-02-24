@@ -67,8 +67,6 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 		default:
 		}
 
-		glfw.PollEvents()
-
 		cameraCommands := map[glfw.Key]cameraCommand{
 			glfw.KeyW:     cameraCommandMove{0, 1},
 			glfw.KeyS:     cameraCommandMove{0, -1},
