@@ -9,6 +9,7 @@ import (
 )
 
 type Planet struct {
+	T   uint64
 	R   float64
 	M   float64
 	Pos vector.V3
@@ -157,14 +158,14 @@ func (o *Orrery) SpawnPlanet(x, y, z float64) {
 	o.l.Lock()
 	defer o.l.Unlock()
 
-	o.planets = append(o.planets, &Planet{R: 1.0, M: 5, Pos: vector.V3{x, y, z}})
+	o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 5, Pos: vector.V3{x, y, z}})
 }
 
 func New() *Orrery {
 	o := &Orrery{
 		planets: []*Planet{
-			&Planet{R: 30.0, M: 500.972},                                             // Earth
-			&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
+			&Planet{T: 0, R: 30.0, M: 500.972},                                             // Earth
+			&Planet{T: 0, R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
 		},
 		trailLength: 20,
 		looptime:    5 * time.Millisecond,
