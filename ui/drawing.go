@@ -90,7 +90,7 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 		ctx := DrawContext{
 			width: width, height: height,
 			win:       w,
-			cmd:       make(chan DrawCommand),
+			cmd:       make(chan DrawCommand, 1),
 			wireframe: true,
 			verbose: true,
 			cam:       cam,
@@ -342,6 +342,8 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 		ctx.drawPlanets(o)
 		ctx.drawHud(o, t_delta)
 		ctx.win.SwapBuffers()
+
+		glfw.PollEvents()
 
 		select {
 		case cmd := <-ctx.cmd:
