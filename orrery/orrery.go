@@ -2,6 +2,7 @@ package orrery
 
 import (
 	"math"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -142,23 +143,47 @@ func (o *Orrery) loop() {
 		}
 
 		// Check for collisions
-		for i, p := range o.planets[:len(o.planets) - 1] {
+		for i, p := range o.planets[:len(o.planets)-1] {
 			for _, px := range o.planets[i+1:] {
-				p.collide(px)
+				if c := p.collide(px); c == TOTAL {
+					l, s := p, px
+					if l.M < s.M {
+						l, s = px, p
+					}
+					s.Pos = l.Pos
+					s.Vel = s.Vel
+				}
 			}
 		}
+
 		o.l.Unlock()
 
 		t_sleep := o.looptime.Nanoseconds() - time.Since(t_start).Nanoseconds()
-		time.Sleep(time.Duration(t_sleep) * time.Nanosecond)
+		if t_sleep > 0 {
+			time.Sleep(time.Duration(t_sleep) * time.Nanosecond)
+		}
 	}
 }
 
-func (o *Orrery) SpawnPlanet(x, y, z float64) {
+func (o *Orrery) SpawnPlanet(p vector.V3) {
 	o.l.Lock()
 	defer o.l.Unlock()
 
-	o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 5, Pos: vector.V3{x, y, z}})
+	o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 5, Pos: p})
+}
+
+func (o *Orrery) SpawnVolume(p vector.V3) {
+	o.l.Lock()
+	defer o.l.Unlock()
+
+	rn := func(r float64) float64 {
+		return (rand.Float64() - 0.5) * r
+	}
+
+	for i := 0; i < 10; i++ {
+		px := vector.V3{p.X + rn(100), p.Y + rn(100), p.Z + rn(100)}
+		o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 2, Pos: px})
+	}
 }
 
 func New() *Orrery {
