@@ -1,8 +1,8 @@
 package vector
 
 import (
-	"math"
 	"fmt"
+	"math"
 )
 
 type V3 struct {
