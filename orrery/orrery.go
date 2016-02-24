@@ -1,6 +1,7 @@
 package orrery
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"sync"
@@ -37,6 +38,10 @@ func (o *Orrery) Planets() []*Planet {
 	copy(r, o.planets)
 
 	return r
+}
+
+func (p Planet) String() string {
+	return fmt.Sprintf(`R:%.2f, M:%.2f, Pos:%s, Vel:%s`, p.R, p.M, p.Pos, p.Vel)
 }
 
 func (p *Planet) move(trailLength int) {

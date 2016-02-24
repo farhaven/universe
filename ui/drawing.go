@@ -245,7 +245,7 @@ func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, frametime time.Durati
 	if ctx.verbose {
 		for i, p := range o.Planets() {
 			p.L.Lock()
-			l := fmt.Sprintf(` π %d: r=%0.2f M=%0.2f pos=(%0.2f, %0.2f, %0.2f), vel=(%0.2f, %0.2f, %0.2f)`, i, p.R, p.M, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Vel.X, p.Vel.Y, p.Vel.Z)
+			l := fmt.Sprintf(` π %d: %s`, i, p)
 			p.L.Unlock()
 			lines = append(lines, l)
 		}

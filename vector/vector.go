@@ -1,9 +1,16 @@
 package vector
 
-import "math"
+import (
+	"math"
+	"fmt"
+)
 
 type V3 struct {
 	X, Y, Z float64
+}
+
+func (v V3) String() string {
+	return fmt.Sprintf(`(%.2f, %.2f, %.2f)`, v.X, v.Y, v.Z)
 }
 
 func (v V3) Length() float64 {
