@@ -15,7 +15,6 @@ import (
 type Context struct {
 	ft *freetype.Context
 	fnt *truetype.Font
-	lh float64
 }
 
 func NewContext(font string) (*Context, error) {
@@ -37,9 +36,10 @@ func NewContext(font string) (*Context, error) {
 
 	ctx := freetype.NewContext()
 	ctx.SetFont(fnt)
-	ctx.SetDPI(72)
+	/* XXX: get appropriate DPI for current display */
+	ctx.SetDPI(96)
 
-	return &Context{ctx, fnt, 0}, nil
+	return &Context{ctx, fnt}, nil
 }
 
 func int26_6ToFloat64(i fixed.Int26_6) float64 {
