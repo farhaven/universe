@@ -73,7 +73,7 @@ func (p *Planet) move(trailLength int) {
 }
 
 func (p *Planet) applyForce(f vector.V3) {
-	p.Vel = p.Vel.Add(f.Scaled(1/p.M))
+	p.Vel = p.Vel.Add(f.Scaled(1 / p.M))
 }
 
 type planetIntersection int
