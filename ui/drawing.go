@@ -231,7 +231,7 @@ func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, frametime time.Durati
 	if ctx.verbose {
 		lines = append(lines, []string{
 			"WASD: Move, 1: Toggle wireframe, F: Fullscreen, H: Toggle HUD verbosity, Q: Quit",
-			"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet",
+			"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet, V: Spawn 10 planets",
 			"P: panic and dump stacks",
 		}...)
 	}
