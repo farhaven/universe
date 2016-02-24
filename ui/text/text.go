@@ -8,11 +8,14 @@ import (
 	"os"
 
 	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/math/fixed"
 )
 
 type Context struct {
 	ft *freetype.Context
+	fnt *truetype.Font
+	lh float64
 }
 
 func NewContext(font string) (*Context, error) {
@@ -36,7 +39,7 @@ func NewContext(font string) (*Context, error) {
 	ctx.SetFont(fnt)
 	ctx.SetDPI(72)
 
-	return &Context{ctx}, nil
+	return &Context{ctx, fnt, 0}, nil
 }
 
 func int26_6ToFloat64(i fixed.Int26_6) float64 {
@@ -58,6 +61,9 @@ func (i nullImage) Set(x, y int, c color.Color) {
 }
 
 func (c *Context) Render(txt string, size float64, col color.Color) (*image.RGBA, error) {
+	bnd := c.fnt.Bounds(fixed.I(int(size + 0.5)))
+	lh := int26_6ToFloat64(bnd.Max.Y) - int26_6ToFloat64(bnd.Min.Y) - 0.5
+
 	c.ft.SetSrc(image.NewUniform(col))
 	c.ft.SetFontSize(size)
 
@@ -65,12 +71,12 @@ func (c *Context) Render(txt string, size float64, col color.Color) (*image.RGBA
 	tmp := nullImage{}
 	c.ft.SetDst(tmp)
 	c.ft.SetClip(tmp.Bounds())
-	p, err := c.ft.DrawString(txt, fixed.P(0, int(size+0.5)))
+	p, err := c.ft.DrawString(txt, fixed.P(0, int(lh)))
 	if err != nil {
 		return nil, err
 	}
 
-	dst := image.NewRGBA(image.Rect(0, 0, int(int26_6ToFloat64(p.X)+0.5), int(int26_6ToFloat64(p.Y)+0.5)))
+	dst := image.NewRGBA(image.Rect(0, 0, int(int26_6ToFloat64(p.X)+0.5), int(lh)))
 	draw.Draw(dst, dst.Bounds(), image.NewUniform(color.RGBA{}), image.ZP, draw.Src)
 	c.ft.SetDst(dst)
 	c.ft.SetClip(dst.Bounds())
