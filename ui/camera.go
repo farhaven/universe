@@ -1,15 +1,16 @@
 package ui
 
 import (
-	"../vector"
-	"github.com/go-gl/gl/v2.1/gl"
 	"log"
 	"math"
+
+	"../vector"
+	"github.com/go-gl/gl/v2.1/gl"
 )
 
 type cameraCommand interface{}
 type cameraCommandMove struct {
-	X, Y    int32
+	X, Y int32
 }
 type cameraCommandTurn struct {
 	X, Y int32

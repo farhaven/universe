@@ -1,10 +1,11 @@
 package orrery
 
 import (
-	"../vector"
 	"math"
-	"time"
 	"sync"
+	"time"
+
+	"../vector"
 )
 
 type Planet struct {
@@ -98,7 +99,7 @@ func (o *Orrery) loop() {
 		wg.Add(len(o.planets))
 		for _, p := range o.planets {
 			p := p
-			go func () {
+			go func() {
 				defer wg.Done()
 				p.affectGravity(o)
 			}()
@@ -166,7 +167,7 @@ func New() *Orrery {
 			&Planet{R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
 		},
 		trailLength: 20,
-		looptime: 5 * time.Millisecond,
+		looptime:    5 * time.Millisecond,
 
 		q: make(chan bool),
 	}
