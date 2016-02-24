@@ -150,15 +150,15 @@ func (c *Camera) lookAt(at vector.V3) {
 
 func (c *Camera) Update() {
 	// This has to be called in the GL thread
+	vx := math.Cos(c.alpha)*10 + c.Pos.X
+	vy := math.Sin(c.alpha)*10 + c.Pos.Y
+	vz := math.Sin(c.theta)*10 + c.Pos.Z
+
+	c.lookAt(vector.V3{vx, vy, vz})
+
 	gl.MatrixMode(gl.PROJECTION)
 	gl.LoadIdentity()
 	gl.Frustum(-c.frustum.nearW, c.frustum.nearW, -c.frustum.nearH, c.frustum.nearH, c.frustum.zNear, c.frustum.zFar)
-
-	vx := math.Cos(c.alpha)*10 + c.Pos.X
-	vy := math.Sin(c.alpha)*10 + c.Pos.Y
-	vz := c.theta*10 + c.Pos.Z
-
-	c.lookAt(vector.V3{vx, vy, vz})
 }
 
 func (c *Camera) handleCommands() {
