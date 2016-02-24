@@ -37,7 +37,7 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 	ctx.win.SetCursorPosCallback(func(w *glfw.Window, xpos float64, ypos float64) {
 		xrel := cursorx - xpos
 		yrel := cursory - ypos
-		ctx.cam.QueueCommand(cameraCommandTurn{int32(xrel), int32(-yrel)})
+		ctx.cam.QueueCommand(cameraCommandTurn{float64(xrel), float64(-yrel)})
 		cursorx, cursory = xpos, ypos
 	})
 	ctx.win.SetScrollCallback(func(w *glfw.Window, xoff float64, yoff float64) {
