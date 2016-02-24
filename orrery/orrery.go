@@ -76,11 +76,28 @@ func (p *Planet) applyForce(f vector.V3) {
 	p.Vel = p.Vel.Add(f.Scaled(1/p.M))
 }
 
-func (p *Planet) collide(px *Planet) {
-	/* Totally elastic collision, no transformation of kinetic energy to heat or rotational energy, no mass transfer */
-	/* c.f. https://en.m.wikipedia.org/wiki/Elastic_collision */
-	/* Derived from the formula for a collision between two moving objects on a 2D plane */
+type planetIntersection int
 
+const (
+	TOTAL planetIntersection = iota
+	PARTIAL
+	NONE
+)
+
+func (i planetIntersection) String() string {
+	switch i {
+	case TOTAL:
+		return "TOTAL"
+	case PARTIAL:
+		return "PARTIAL"
+	case NONE:
+		return "NONE"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+func (p *Planet) collide(px *Planet) planetIntersection {
 	p.L.Lock()
 	defer p.L.Unlock()
 
@@ -89,18 +106,27 @@ func (p *Planet) collide(px *Planet) {
 
 	d := p.Pos.Distance(px.Pos)
 	if d > p.R+px.R {
-		return
+		return NONE
 	}
 
-	/* V1 */
-	a1 := -2 * px.M / (p.M + px.M)
+	if d < math.Min(p.R, px.R) {
+		return TOTAL
+	}
+
+	CR := 0.5 // Coefficient of restitution, 0: totally elastic, 1: totally inelastic
+
+	v1 := p.Vel.Length()
+	v2 := px.Vel.Length()
+
+	a1 := (CR*px.M*(v2-v1) + p.M*v1 + px.M*v2) / (p.M + px.M)
 	d1 := p.Pos.Sub(px.Pos)
 	p.applyForce(d1.Scaled(a1 * (p.Vel.Sub(px.Vel).Dot(d1) / d1.Length())))
 
-	/* V2 */
-	a2 := -2 * p.M / (p.M + px.M)
+	a2 := (CR*p.M*(v1-v2) + p.M*v1 + px.M*v2) / (p.M + px.M)
 	d2 := px.Pos.Sub(p.Pos)
-	px.applyForce(d2.Scaled(a2 * (px.Vel.Sub(p.Vel).Dot(d2) / d2.Length())))
+	p.applyForce(d2.Scaled(a2 * (p.Vel.Sub(px.Vel).Dot(d1) / d1.Length())))
+
+	return PARTIAL
 }
 
 func (p *Planet) affectGravity(o *Orrery) {
