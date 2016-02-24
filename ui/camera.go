@@ -38,7 +38,7 @@ type Camera struct {
 
 func NewCamera(width, height int, x, y, z float64) *Camera {
 	c := &Camera{
-		cmds:    make(chan cameraCommand),
+		cmds:    make(chan cameraCommand, 20),
 		screenw: width, screenh: height,
 		Pos: vector.V3{x, y, z},
 	}
