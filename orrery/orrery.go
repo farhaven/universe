@@ -17,7 +17,6 @@ type Planet struct {
 
 	Trail []vector.V3
 
-	invalid bool
 	L sync.Mutex
 }
 
@@ -67,6 +66,35 @@ func (p *Planet) move(trailLength int) {
 	p.Pos = newPos
 }
 
+func (p *Planet) collide(px *Planet) {
+	/* Totally elastic collision, no transformation of kinetic energy to heat or rotational energy, no mass transfer */
+	/* c.f. https://en.m.wikipedia.org/wiki/Elastic_collision */
+	/* Derived from the formula for a collision between two moving objects on a 2D plane */
+
+	p.L.Lock()
+	defer p.L.Unlock()
+
+	px.L.Lock()
+	defer px.L.Unlock()
+
+	d := p.Pos.Distance(px.Pos)
+	if d > p.R+px.R {
+		return
+	}
+
+	mm := 1 / math.Min(p.M, px.M)
+
+	/* V1 */
+	a1 := 2 * px.M / (p.M + px.M)
+	d1 := p.Pos.Sub(px.Pos)
+	p.Vel = p.Vel.Sub(d1.Scaled(a1 * (p.Vel.Sub(px.Vel).Dot(d1) / d1.Length())).Scaled(mm))
+
+	/* V2 */
+	a2 := 2 * p.M / (p.M + px.M)
+	d2 := px.Pos.Sub(p.Pos)
+	px.Vel = px.Vel.Sub(d2.Scaled(a2 * (px.Vel.Sub(p.Vel).Dot(d2) / d2.Length())).Scaled(mm))
+}
+
 func (p *Planet) affectGravity(o *Orrery) {
 	p.L.Lock()
 	defer p.L.Unlock()
@@ -111,42 +139,12 @@ func (o *Orrery) loop() {
 			p.move(o.trailLength)
 		}
 
-		pl := []*Planet{}
-
 		// Check for collisions
-		for i, p := range o.planets {
-			if p.invalid {
-				continue
-			}
-			for j, px := range o.planets {
-				if i == j || px.invalid {
-					continue
-				}
-
-				d := p.Pos.Distance(px.Pos)
-				if d > p.R+px.R {
-					continue
-				}
-
-				l := p
-				s := px
-				if px.M > p.M {
-					l = px
-					s = p
-				}
-
-				l.M += s.M
-				l.Vel = l.Vel.Add(s.Vel.Scaled(1 / l.M))
-				s.invalid = true
+		for i, p := range o.planets[:len(o.planets) - 1] {
+			for _, px := range o.planets[i+1:] {
+				p.collide(px)
 			}
 		}
-
-		for _, p := range o.planets {
-			if !p.invalid {
-				pl = append(pl, p)
-			}
-		}
-		o.planets = pl
 		o.l.Unlock()
 
 		t_sleep := o.looptime.Nanoseconds() - time.Since(t_start).Nanoseconds()
