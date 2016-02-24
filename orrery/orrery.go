@@ -66,6 +66,10 @@ func (p *Planet) move(trailLength int) {
 	p.Pos = newPos
 }
 
+func (p *Planet) applyForce(f vector.V3) {
+	p.Vel = p.Vel.Add(f.Scaled(1/p.M))
+}
+
 func (p *Planet) collide(px *Planet) {
 	/* Totally elastic collision, no transformation of kinetic energy to heat or rotational energy, no mass transfer */
 	/* c.f. https://en.m.wikipedia.org/wiki/Elastic_collision */
@@ -82,17 +86,15 @@ func (p *Planet) collide(px *Planet) {
 		return
 	}
 
-	mm := 1 / math.Min(p.M, px.M)
-
 	/* V1 */
-	a1 := 2 * px.M / (p.M + px.M)
+	a1 := -2 * px.M / (p.M + px.M)
 	d1 := p.Pos.Sub(px.Pos)
-	p.Vel = p.Vel.Sub(d1.Scaled(a1 * (p.Vel.Sub(px.Vel).Dot(d1) / d1.Length())).Scaled(mm))
+	p.applyForce(d1.Scaled(a1 * (p.Vel.Sub(px.Vel).Dot(d1) / d1.Length())))
 
 	/* V2 */
-	a2 := 2 * p.M / (p.M + px.M)
+	a2 := -2 * p.M / (p.M + px.M)
 	d2 := px.Pos.Sub(p.Pos)
-	px.Vel = px.Vel.Sub(d2.Scaled(a2 * (px.Vel.Sub(p.Vel).Dot(d2) / d2.Length())).Scaled(mm))
+	px.applyForce(d2.Scaled(a2 * (px.Vel.Sub(p.Vel).Dot(d2) / d2.Length())))
 }
 
 func (p *Planet) affectGravity(o *Orrery) {
@@ -115,7 +117,7 @@ func (p *Planet) affectGravity(o *Orrery) {
 
 		v = v.Normalized().Scaled(a)
 
-		p.Vel = p.Vel.Add(v.Scaled(1 / p.M))
+		p.applyForce(v)
 	}
 }
 
