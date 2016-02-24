@@ -53,8 +53,6 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 		log.Fatalf(`can't create text context: %s`)
 	}
 
-	cam := NewCamera(width, height, -40, 40, 10)
-
 	c := make(chan DrawContext)
 
 	// This is a hack to make sure all drawing stuff runs in the same goroutine
@@ -77,6 +75,8 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 		}
 		defer w.Destroy()
 
+		width, height = w.GetFramebufferSize()
+
 		w.MakeContextCurrent()
 
 		if err := gl.Init(); err != nil {
@@ -86,6 +86,7 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 		gl.ClearColor(0.1, 0.1, 0.1, 0.1)
 		gl.Enable(gl.DEPTH_TEST)
 
+		cam := NewCamera(width, height, -40, 40, 10)
 		ctx := DrawContext{
 			width: width, height: height,
 			win:       w,
