@@ -110,16 +110,16 @@ func (p *Planet) collide(px *Planet) {
 		return
 	}
 
-	CR := 0.1
+	CR := 0.7
 
 	a1 := 2 * px.M / (p.M + px.M)
-	d1 := p.Pos.Sub(px.Pos)
+	v1 := px.Vel.Sub(p.Vel)
 
 	a2 := 2 * p.M / (p.M + px.M)
-	d2 := px.Pos.Sub(p.Pos)
+	v2 := p.Vel.Sub(px.Vel)
 
-	p.applyForce(d1.Normalized(), a1*CR)
-	px.applyForce(d2.Normalized(), a2*CR)
+	p.applyForce(v1.Normalized(), a1*CR)
+	px.applyForce(v2.Normalized(), a2*CR)
 
 	p.T += (a1 * (1 - CR)) / p.M
 	px.T += (a2 * (1 - CR)) / px.M
