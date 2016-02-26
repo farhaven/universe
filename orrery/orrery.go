@@ -31,7 +31,7 @@ type CommandSpawnVolume struct {
 }
 type CommandPause struct{}
 type Orrery struct {
-	particles     []*Particle
+	particles   []*Particle
 	trailLength int
 	q           chan bool
 	l           sync.Mutex
@@ -243,7 +243,7 @@ func (o *Orrery) QueueCommand(c command) {
 
 func New() *Orrery {
 	o := &Orrery{
-		particles:     []*Particle{},
+		particles:   []*Particle{},
 		trailLength: 20,
 		looptime:    5 * time.Millisecond,
 
