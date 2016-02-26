@@ -243,10 +243,7 @@ func (o *Orrery) QueueCommand(c command) {
 
 func New() *Orrery {
 	o := &Orrery{
-		planets: []*Planet{
-			&Planet{T: 0, R: 30.0, M: 500.972},                                             // Earth
-			&Planet{T: 0, R: 5, M: 7.3459, Pos: vector.V3{X: 200}, Vel: vector.V3{Y: 0.1}}, // Moon
-		},
+		planets:     []*Planet{},
 		trailLength: 20,
 		looptime:    5 * time.Millisecond,
 
