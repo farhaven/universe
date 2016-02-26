@@ -118,8 +118,8 @@ func (p *Planet) collide(px *Planet) {
 	a2 := 2 * p.M / (p.M + px.M)
 	d2 := px.Pos.Sub(p.Pos)
 
-	p.applyForce(d1.Normalized(), a1 * CR)
-	px.applyForce(d2.Normalized(), a2 * CR)
+	p.applyForce(d1.Normalized(), a1*CR)
+	px.applyForce(d2.Normalized(), a2*CR)
 
 	p.T += (a1 * (1 - CR)) / p.M
 	px.T += (a2 * (1 - CR)) / px.M
