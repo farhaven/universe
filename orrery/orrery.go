@@ -165,6 +165,8 @@ func (o *Orrery) loop() {
 	rScale := math.Pow(mScale, 1/3)
 
 	for {
+		t_start := time.Now()
+
 		select {
 		case c := <-o.c:
 			switch c := c.(type) {
@@ -194,9 +196,6 @@ func (o *Orrery) loop() {
 			continue
 		}
 
-		t_start := time.Now()
-		o.l.Lock()
-
 		pchan := make(chan [2]*Planet)
 		wg := sync.WaitGroup{}
 		gw := func() {
@@ -208,6 +207,8 @@ func (o *Orrery) loop() {
 		for i := 0; i < 4; i++ {
 			go gw()
 		}
+
+		o.l.Lock()
 		for i, p := range o.planets {
 			for _, px := range o.planets[i+1:] {
 				wg.Add(1)
