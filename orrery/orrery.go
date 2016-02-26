@@ -210,6 +210,7 @@ func (o *Orrery) loop() {
 			}
 		}
 		wg.Wait()
+		close(pchan)
 
 		for _, p := range o.planets {
 			p.move(o.trailLength)
