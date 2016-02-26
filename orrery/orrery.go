@@ -165,20 +165,25 @@ func (o *Orrery) loop() {
 	   - https://en.wikipedia.org/wiki/Barnes%E2%80%93Hut_simulation
 	*/
 
+	mScale := 15.0
+	rScale := math.Pow(mScale, 1/3)
+
 	for {
 		select {
 		case c := <-o.c:
 			switch c := c.(type) {
 			case CommandSpawnPlanet:
-				o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 5, Pos: c.Pos})
+				m := rand.Float64() * mScale
+				o.planets = append(o.planets, &Planet{T: 0, R: m * rScale, M: m, Pos: c.Pos})
 			case CommandSpawnVolume:
 				rn := func(r float64) float64 {
 					return (rand.Float64() - 0.5) * r
 				}
 
 				for i := 0; i < 10; i++ {
-					px := vector.V3{c.Pos.X + rn(100), c.Pos.Y + rn(100), c.Pos.Z + rn(100)}
-					o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 2, Pos: px})
+					px := vector.V3{c.Pos.X + rn(300), c.Pos.Y + rn(300), c.Pos.Z + rn(300)}
+					m := rand.Float64() * mScale
+					o.planets = append(o.planets, &Planet{T: 0, R: m * rScale, M: m, Pos: px})
 				}
 			case CommandPause:
 				o.Paused = !o.Paused
