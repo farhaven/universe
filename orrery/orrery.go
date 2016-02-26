@@ -161,6 +161,10 @@ func (p *Planet) interactGravity(px *Planet) {
 }
 
 func (o *Orrery) loop() {
+	/* XXX: Use barnes-hut simulation for less processing time: O(n^2) -> O(n log n)
+	   - https://en.wikipedia.org/wiki/Barnes%E2%80%93Hut_simulation
+	*/
+
 	for {
 		select {
 		case c := <-o.c:
