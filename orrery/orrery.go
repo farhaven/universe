@@ -150,10 +150,10 @@ func (p *Planet) interactGravity(px *Planet) {
 	M := p.M + px.M
 	a := (G * M) / (d * d)
 
-	v = v.Normalized().Scaled(a)
+	v = v.Normalized()
 
-	p.applyForce(v, 1)
-	px.applyForce(v, -1)
+	p.applyForce(v, a)
+	px.applyForce(v, -a)
 }
 
 func (o *Orrery) loop() {
