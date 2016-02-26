@@ -43,7 +43,7 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 		Pos: vector.V3{x, y, z},
 	}
 	c.frustum.zNear = 0.5
-	c.frustum.zFar = 1024
+	c.frustum.zFar = float64(width)
 	c.frustum.fovY = 60
 	c.frustum.aspect = float64(width) / float64(height)
 
