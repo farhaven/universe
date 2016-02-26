@@ -130,6 +130,10 @@ func (p *Planet) collide(px *Planet) {
 }
 
 func (p *Planet) interactGravity(px *Planet) {
+	if px == p {
+		panic(`can't gravitationally interact with myself!`)
+	}
+
 	p.L.Lock()
 	defer p.L.Unlock()
 
@@ -138,10 +142,6 @@ func (p *Planet) interactGravity(px *Planet) {
 
 	if p.M == 0 || px.M == 0 {
 		return
-	}
-
-	if px == p {
-		panic(`can't gravitationally interact with myself!`)
 	}
 
 	// G := 6.67 * math.Pow(10, -11)
