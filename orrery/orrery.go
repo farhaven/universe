@@ -11,7 +11,7 @@ import (
 )
 
 type Planet struct {
-	T   uint64
+	T   float64
 	R   float64
 	M   float64
 	Pos vector.V3
@@ -51,7 +51,7 @@ func (o *Orrery) Planets() []*Planet {
 }
 
 func (p Planet) String() string {
-	return fmt.Sprintf(`R:%.2f, M:%.2f, Pos:%s, Vel:%s`, p.R, p.M, p.Pos, p.Vel)
+	return fmt.Sprintf(`T: %0.2f R:%.2f, M:%.2f, Pos:%s, Vel:%s`, p.T, p.R, p.M, p.Pos, p.Vel)
 }
 
 func (p *Planet) move(trailLength int) {
@@ -86,28 +86,15 @@ func (p *Planet) applyForce(f vector.V3, s float64) {
 	p.Vel = p.Vel.Add(f.Scaled(s / p.M))
 }
 
-type planetIntersection int
-
-const (
-	TOTAL planetIntersection = iota
-	PARTIAL
-	NONE
-)
-
-func (i planetIntersection) String() string {
-	switch i {
-	case TOTAL:
-		return "TOTAL"
-	case PARTIAL:
-		return "PARTIAL"
-	case NONE:
-		return "NONE"
-	default:
-		return "UNKNOWN"
+func (p *Planet) collide(px *Planet) {
+	if p == px {
+		panic(`can't collide with myself!`)
 	}
-}
 
-func (p *Planet) collide(px *Planet) planetIntersection {
+	if p.M == 0 || px.M == 0 {
+		panic(`colliding a planet with zero mass!`)
+	}
+
 	p.L.Lock()
 	defer p.L.Unlock()
 
@@ -116,54 +103,30 @@ func (p *Planet) collide(px *Planet) planetIntersection {
 
 	d := p.Pos.Distance(px.Pos)
 	if d > p.R+px.R {
-		return NONE
+		return
 	}
-
-	if d < math.Min(p.R, px.R) {
-		return TOTAL
-	}
-
-	CR := 0.5 // Coefficient of restitution, 0: totally elastic, 1: totally inelastic
-
-	v1 := p.Vel.Length()
-	v2 := px.Vel.Length()
-	if math.IsNaN(v1) || math.IsNaN(v2) || math.IsInf(v1, 0) || math.IsInf(v2, 0) {
-		panic(fmt.Sprintf(`v1: (%v %v) v2: (%v %v)`, p.Vel, v1, px.Vel, v2))
-	}
-
-	a1 := (CR*px.M*(v2-v1) + p.M*v1 + px.M*v2) / (p.M + px.M)
-	d1 := p.Pos.Sub(px.Pos)
-	if d1.Length() == 0 {
-		panic(`zero distance`)
-	}
-	x1 := p.Vel.Sub(px.Vel).Dot(d1) / d1.Length()
-	n1 := a1 * x1
-	if math.IsNaN(n1) {
-		txt := fmt.Sprintf(`%v|%v|%v|%v`, CR, px.M*(v2-v1), p.M*v1, px.M*v2)
-		panic(fmt.Sprintf(`%s, a1: %v x1: %v`, txt, a1, x1))
-	}
-	p.applyForce(d1.Scaled(n1), 1)
-
-	a2 := (CR*p.M*(v1-v2) + p.M*v1 + px.M*v2) / (p.M + px.M)
-	d2 := px.Pos.Sub(p.Pos)
-	if d2.Length() == 0 {
-		panic(`zero distance`)
-	}
-	x2 := p.Vel.Sub(px.Vel).Dot(d2) / d2.Length()
-	n2 := a2 * x2
-	if math.IsNaN(n2) {
-		txt := fmt.Sprintf(`%v|%v|%v|%v`, CR, px.M*(v1-v2), p.M*v1, px.M*v2)
-		panic(fmt.Sprintf(`%s, a1: %v x1: %v`, txt, a2, x2))
-	}
-	p.applyForce(d2.Scaled(n2), 1)
-
-/*
 	if d < math.Max(p.R, px.R) {
-		return TOTAL
+		/* XXX: Merge planets */
+		return
 	}
-*/
 
-	return PARTIAL
+	CR := 0.1
+
+	a1 := 2 * px.M / (p.M + px.M)
+	d1 := p.Pos.Sub(px.Pos)
+	dbar1 := d1.X * d1.X + d1.Y * d1.Y + d1.Z * d1.Z
+	v1 := p.Vel.Sub(px.Vel).Dot(d1) / dbar1
+
+	a2 := 2 * p.M / (p.M + px.M)
+	d2 := px.Pos.Sub(p.Pos)
+	dbar2 := d2.X * d2.X + d2.Y * d2.Y + d2.Z * d2.Z
+	v2 := px.Vel.Sub(p.Vel).Dot(d2) / dbar2
+
+	p.applyForce(d1, CR*a1*v1)
+	px.applyForce(d2, CR*a2*v2)
+
+	p.T += (a1 * (1 - CR)) / p.M
+	px.T += (a2 * (1 - CR)) / px.M
 }
 
 func (p *Planet) interactGravity(px *Planet) {
@@ -253,19 +216,11 @@ func (o *Orrery) loop() {
 		}
 
 		// Check for collisions
-		for i, p := range o.planets[:len(o.planets)-1] {
+		for i, p := range o.planets {
 			for _, px := range o.planets[i+1:] {
-				if c := p.collide(px); c == TOTAL {
-					l, s := p, px
-					if l.M < s.M {
-						l, s = px, p
-					}
-					s.Pos = l.Pos
-					s.Vel = s.Vel
-				}
+				p.collide(px)
 			}
 		}
-
 		o.l.Unlock()
 
 		t_sleep := o.looptime.Nanoseconds() - time.Since(t_start).Nanoseconds()
