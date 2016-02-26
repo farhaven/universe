@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"../orrery"
+	"../vector"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
@@ -25,6 +26,10 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 			ctx.QueueCommand(DRAW_TOGGLE_VERBOSE)
 		case glfw.KeyV:
 			o.SpawnVolume(ctx.cam.Pos)
+		case glfw.KeyB:
+			o.SpawnVolume(vector.V3{})
+		case glfw.KeyN:
+			o.SpawnPlanet(vector.V3{})
 		case glfw.KeySpace:
 			ctx.cam.QueueCommand(cameraCommandDrop{})
 		case glfw.KeyP:

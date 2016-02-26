@@ -117,6 +117,9 @@ func (p *Planet) collide(px *Planet) planetIntersection {
 
 	v1 := p.Vel.Length()
 	v2 := px.Vel.Length()
+	if math.IsNaN(v1) || math.IsNaN(v2) || math.IsInf(v1, 0) || math.IsInf(v2, 0) {
+		panic(fmt.Sprintf(`v1: (%v %v) v2: (%v %v)`, p.Vel, v1, px.Vel, v2))
+	}
 
 	a1 := (CR*px.M*(v2-v1) + p.M*v1 + px.M*v2) / (p.M + px.M)
 	d1 := p.Pos.Sub(px.Pos)
