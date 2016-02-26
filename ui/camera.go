@@ -15,7 +15,7 @@ type cameraCommandMove struct {
 type cameraCommandTurn struct {
 	X, Y float64
 }
-type cameraCommandDrop struct{}
+type cameraCommandReset struct{}
 
 type Camera struct {
 	cmds chan cameraCommand
@@ -185,8 +185,10 @@ func (c *Camera) handleCommands() {
 				c.Pos.X += float64(cmd.X) * math.Cos(c.alpha+Pi2)
 				c.Pos.Y += float64(cmd.X) * math.Sin(c.alpha+Pi2)
 			}
-		case cameraCommandDrop:
-			c.Pos.Z = 0
+		case cameraCommandReset:
+			c.Pos = vector.V3{}
+			c.alpha = 0
+			c.theta = 0
 		}
 	}
 }

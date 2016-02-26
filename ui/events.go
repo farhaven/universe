@@ -31,7 +31,7 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 		case glfw.KeyN:
 			o.QueueCommand(orrery.CommandSpawnPlanet{vector.V3{}})
 		case glfw.KeySpace:
-			ctx.cam.QueueCommand(cameraCommandDrop{})
+			ctx.cam.QueueCommand(cameraCommandReset{})
 		case glfw.KeyP:
 			o.QueueCommand(orrery.CommandPause{})
 		default:
