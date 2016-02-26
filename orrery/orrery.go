@@ -37,7 +37,7 @@ type Orrery struct {
 	l           sync.Mutex
 	c           chan command
 	looptime    time.Duration
-	Paused bool
+	Paused      bool
 }
 
 func (o *Orrery) Planets() []*Planet {

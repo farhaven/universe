@@ -228,17 +228,16 @@ func (ctx *DrawContext) drawGrid() {
 func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, frametime time.Duration) (uint32, [2]int, error) {
 	lines := []string{}
 
-	if ctx.verbose {
-		lines = append(lines, []string{
-			"WASD: Move, 1: Toggle wireframe, F: Fullscreen, H: Toggle HUD verbosity, Q: Quit",
-			"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet, V: Spawn 10 planets",
-		}...)
+	if o.Paused {
+		lines = append(lines, "PAUSED")
 	}
 
-	if o.Paused {
-		lines = append(lines, "P: unpause")
-	} else {
-		lines = append(lines, "P: pause")
+	if ctx.verbose {
+		lines = append(lines, []string{
+			"WASD: Move, 1: Toggle wireframe, H: Toggle HUD verbosity, Q: Quit",
+			"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet, V: Spawn 10 planets",
+			"Space: Reset camera, P: Toggle pause",
+		}...)
 	}
 
 	lines = append(lines, []string{
