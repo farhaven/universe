@@ -114,16 +114,12 @@ func (p *Planet) collide(px *Planet) {
 
 	a1 := 2 * px.M / (p.M + px.M)
 	d1 := p.Pos.Sub(px.Pos)
-	dbar1 := d1.X * d1.X + d1.Y * d1.Y + d1.Z * d1.Z
-	v1 := p.Vel.Sub(px.Vel).Dot(d1) / dbar1
 
 	a2 := 2 * p.M / (p.M + px.M)
 	d2 := px.Pos.Sub(p.Pos)
-	dbar2 := d2.X * d2.X + d2.Y * d2.Y + d2.Z * d2.Z
-	v2 := px.Vel.Sub(p.Vel).Dot(d2) / dbar2
 
-	p.applyForce(d1, CR*a1*v1)
-	px.applyForce(d2, CR*a2*v2)
+	p.applyForce(d1.Normalized(), a1 * CR)
+	px.applyForce(d2.Normalized(), a2 * CR)
 
 	p.T += (a1 * (1 - CR)) / p.M
 	px.T += (a2 * (1 - CR)) / px.M
