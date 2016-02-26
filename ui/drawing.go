@@ -123,13 +123,13 @@ func (ctx *DrawContext) QueueCommand(cmd DrawCommand) {
 	ctx.cmd <- cmd
 }
 
-func (ctx *DrawContext) drawPlanets(o *orrery.Orrery) {
-	for _, p := range o.Planets() {
-		ctx.drawPlanet(p)
+func (ctx *DrawContext) drawParticles(o *orrery.Orrery) {
+	for _, p := range o.Particles() {
+		ctx.drawParticle(p)
 	}
 }
 
-func (ctx *DrawContext) drawPlanet(p *orrery.Planet) {
+func (ctx *DrawContext) drawParticle(p *orrery.Particle) {
 	p.L.Lock()
 	defer p.L.Unlock()
 
@@ -235,7 +235,7 @@ func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, frametime time.Durati
 	if ctx.verbose {
 		lines = append(lines, []string{
 			"WASD: Move, 1: Toggle wireframe, H: Toggle HUD verbosity, Q: Quit",
-			"Mouse Wheel: Move fast, Mouse Btn #1: Spawn planet, V: Spawn 10 planets",
+			"Mouse Wheel: Move fast, Mouse Btn #1: Spawn particle, V: Spawn 10 particles",
 			"Space: Reset camera, P: Toggle pause",
 		}...)
 	}
@@ -247,9 +247,9 @@ func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, frametime time.Durati
 	}...)
 
 	if ctx.verbose {
-		planets := o.Planets()
-		lines = append(lines, fmt.Sprintf(`#P: %d`, len(planets)))
-		for i, p := range planets {
+		particles := o.Particles()
+		lines = append(lines, fmt.Sprintf(`#P: %d`, len(particles)))
+		for i, p := range particles {
 			p.L.Lock()
 			l := fmt.Sprintf(` π %d: %s`, i, p)
 			p.L.Unlock()
@@ -345,7 +345,7 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		ctx.cam.Update()
 		ctx.drawGrid()
-		ctx.drawPlanets(o)
+		ctx.drawParticles(o)
 		ctx.drawHud(o, t_delta)
 		ctx.win.SwapBuffers()
 

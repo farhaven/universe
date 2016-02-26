@@ -10,7 +10,7 @@ import (
 	"../vector"
 )
 
-type Planet struct {
+type Particle struct {
 	T   float64
 	R   float64
 	M   float64
@@ -23,7 +23,7 @@ type Planet struct {
 }
 
 type command interface{}
-type CommandSpawnPlanet struct {
+type CommandSpawnParticle struct {
 	Pos vector.V3
 }
 type CommandSpawnVolume struct {
@@ -31,7 +31,7 @@ type CommandSpawnVolume struct {
 }
 type CommandPause struct{}
 type Orrery struct {
-	planets     []*Planet
+	particles     []*Particle
 	trailLength int
 	q           chan bool
 	l           sync.Mutex
@@ -40,21 +40,21 @@ type Orrery struct {
 	Paused      bool
 }
 
-func (o *Orrery) Planets() []*Planet {
+func (o *Orrery) Particles() []*Particle {
 	o.l.Lock()
 	defer o.l.Unlock()
 
-	r := make([]*Planet, len(o.planets))
-	copy(r, o.planets)
+	r := make([]*Particle, len(o.particles))
+	copy(r, o.particles)
 
 	return r
 }
 
-func (p Planet) String() string {
+func (p Particle) String() string {
 	return fmt.Sprintf(`T: %0.2f R:%.2f, M:%.2f, Pos:%s, Vel:%s`, p.T, p.R, p.M, p.Pos, p.Vel)
 }
 
-func (p *Planet) move(trailLength int) {
+func (p *Particle) move(trailLength int) {
 	p.L.Lock()
 	defer p.L.Unlock()
 
@@ -82,17 +82,17 @@ func (p *Planet) move(trailLength int) {
 	p.Pos = newPos
 }
 
-func (p *Planet) applyForce(f vector.V3, s float64) {
+func (p *Particle) applyForce(f vector.V3, s float64) {
 	p.Vel = p.Vel.Add(f.Scaled(s / p.M))
 }
 
-func (p *Planet) collide(px *Planet) {
+func (p *Particle) collide(px *Particle) {
 	if p == px {
 		panic(`can't collide with myself!`)
 	}
 
 	if p.M == 0 || px.M == 0 {
-		panic(`colliding a planet with zero mass!`)
+		panic(`colliding a particle with zero mass!`)
 	}
 
 	p.L.Lock()
@@ -106,7 +106,7 @@ func (p *Planet) collide(px *Planet) {
 		return
 	}
 	if d < math.Max(p.R, px.R) {
-		/* XXX: Merge planets */
+		/* XXX: Merge particles */
 		return
 	}
 
@@ -125,7 +125,7 @@ func (p *Planet) collide(px *Planet) {
 	px.T += (a2 * (1 - CR)) / px.M
 }
 
-func (p *Planet) interactGravity(px *Planet) {
+func (p *Particle) interactGravity(px *Particle) {
 	if px == p {
 		panic(`can't gravitationally interact with myself!`)
 	}
@@ -170,9 +170,9 @@ func (o *Orrery) loop() {
 		select {
 		case c := <-o.c:
 			switch c := c.(type) {
-			case CommandSpawnPlanet:
+			case CommandSpawnParticle:
 				m := rand.Float64() * mScale
-				o.planets = append(o.planets, &Planet{T: 0, R: m * rScale, M: m, Pos: c.Pos})
+				o.particles = append(o.particles, &Particle{T: 0, R: m * rScale, M: m, Pos: c.Pos})
 			case CommandSpawnVolume:
 				rn := func(r float64) float64 {
 					return (rand.Float64() - 0.5) * r
@@ -181,7 +181,7 @@ func (o *Orrery) loop() {
 				for i := 0; i < 10; i++ {
 					px := vector.V3{c.Pos.X + rn(300), c.Pos.Y + rn(300), c.Pos.Z + rn(300)}
 					m := rand.Float64() * mScale
-					o.planets = append(o.planets, &Planet{T: 0, R: m * rScale, M: m, Pos: px})
+					o.particles = append(o.particles, &Particle{T: 0, R: m * rScale, M: m, Pos: px})
 				}
 			case CommandPause:
 				o.Paused = !o.Paused
@@ -196,7 +196,7 @@ func (o *Orrery) loop() {
 			continue
 		}
 
-		pchan := make(chan [2]*Planet)
+		pchan := make(chan [2]*Particle)
 		wg := sync.WaitGroup{}
 		gw := func() {
 			for p := range pchan {
@@ -209,22 +209,22 @@ func (o *Orrery) loop() {
 		}
 
 		o.l.Lock()
-		for i, p := range o.planets {
-			for _, px := range o.planets[i+1:] {
+		for i, p := range o.particles {
+			for _, px := range o.particles[i+1:] {
 				wg.Add(1)
-				pchan <- [2]*Planet{p, px}
+				pchan <- [2]*Particle{p, px}
 			}
 		}
 		wg.Wait()
 		close(pchan)
 
-		for _, p := range o.planets {
+		for _, p := range o.particles {
 			p.move(o.trailLength)
 		}
 
 		// Check for collisions
-		for i, p := range o.planets {
-			for _, px := range o.planets[i+1:] {
+		for i, p := range o.particles {
+			for _, px := range o.particles[i+1:] {
 				p.collide(px)
 			}
 		}
@@ -243,7 +243,7 @@ func (o *Orrery) QueueCommand(c command) {
 
 func New() *Orrery {
 	o := &Orrery{
-		planets:     []*Planet{},
+		particles:     []*Particle{},
 		trailLength: 20,
 		looptime:    5 * time.Millisecond,
 
