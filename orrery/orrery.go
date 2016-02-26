@@ -72,8 +72,8 @@ func (p *Planet) move(trailLength int) {
 	p.Pos = newPos
 }
 
-func (p *Planet) applyForce(f vector.V3) {
-	p.Vel = p.Vel.Add(f.Scaled(1 / p.M))
+func (p *Planet) applyForce(f vector.V3, s float64) {
+	p.Vel = p.Vel.Add(f.Scaled(s / p.M))
 }
 
 type planetIntersection int
@@ -120,37 +120,68 @@ func (p *Planet) collide(px *Planet) planetIntersection {
 
 	a1 := (CR*px.M*(v2-v1) + p.M*v1 + px.M*v2) / (p.M + px.M)
 	d1 := p.Pos.Sub(px.Pos)
-	p.applyForce(d1.Scaled(a1 * (p.Vel.Sub(px.Vel).Dot(d1) / d1.Length())))
+	if d1.Length() == 0 {
+		panic(`zero distance`)
+	}
+	x1 := p.Vel.Sub(px.Vel).Dot(d1) / d1.Length()
+	n1 := a1 * x1
+	if math.IsNaN(n1) {
+		txt := fmt.Sprintf(`%v|%v|%v|%v`, CR, px.M*(v2-v1), p.M*v1, px.M*v2)
+		panic(fmt.Sprintf(`%s, a1: %v x1: %v`, txt, a1, x1))
+	}
+	p.applyForce(d1.Scaled(n1), 1)
 
 	a2 := (CR*p.M*(v1-v2) + p.M*v1 + px.M*v2) / (p.M + px.M)
 	d2 := px.Pos.Sub(p.Pos)
-	p.applyForce(d2.Scaled(a2 * (p.Vel.Sub(px.Vel).Dot(d1) / d1.Length())))
+	if d2.Length() == 0 {
+		panic(`zero distance`)
+	}
+	x2 := p.Vel.Sub(px.Vel).Dot(d2) / d2.Length()
+	n2 := a2 * x2
+	if math.IsNaN(n2) {
+		txt := fmt.Sprintf(`%v|%v|%v|%v`, CR, px.M*(v1-v2), p.M*v1, px.M*v2)
+		panic(fmt.Sprintf(`%s, a1: %v x1: %v`, txt, a2, x2))
+	}
+	p.applyForce(d2.Scaled(n2), 1)
+
+/*
+	if d < math.Max(p.R, px.R) {
+		return TOTAL
+	}
+*/
 
 	return PARTIAL
 }
 
-func (p *Planet) affectGravity(o *Orrery) {
+func (p *Planet) interactGravity(px *Planet) {
 	p.L.Lock()
 	defer p.L.Unlock()
 
+	px.L.Lock()
+	defer px.L.Unlock()
+
+	if p.M == 0 || px.M == 0 {
+		return
+	}
+
+	if px == p {
+		panic(`can't gravitationally interact with myself!`)
+	}
+
 	// G := 6.67 * math.Pow(10, -11)
 	G := float64(0.05)
-	for _, px := range o.planets {
-		if p == px {
-			continue
-		}
 
-		v := px.Pos.Sub(p.Pos)
+	v := px.Pos.Sub(p.Pos)
 
-		d := math.Max(1, v.Length())
+	d := math.Max(1, v.Length())
 
-		M := px.M
-		a := (G * M) / (d * d)
+	M := p.M + px.M
+	a := (G * M) / (d * d)
 
-		v = v.Normalized().Scaled(a)
+	v = v.Normalized().Scaled(a)
 
-		p.applyForce(v)
-	}
+	p.applyForce(v, 1)
+	px.applyForce(v, -1)
 }
 
 func (o *Orrery) loop() {
@@ -158,14 +189,22 @@ func (o *Orrery) loop() {
 		t_start := time.Now()
 		o.l.Lock()
 
+		pchan := make(chan [2]*Planet)
 		wg := sync.WaitGroup{}
-		wg.Add(len(o.planets))
-		for _, p := range o.planets {
-			p := p
-			go func() {
-				defer wg.Done()
-				p.affectGravity(o)
-			}()
+		gw := func() {
+			for p := range pchan {
+				p[0].interactGravity(p[1])
+				wg.Done()
+			}
+		}
+		for i := 0; i < 4; i++ {
+			go gw()
+		}
+		for i, p := range o.planets {
+			for _, px := range o.planets[i+1:] {
+				wg.Add(1)
+				pchan <- [2]*Planet{p, px}
+			}
 		}
 		wg.Wait()
 
