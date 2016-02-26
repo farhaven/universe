@@ -25,15 +25,15 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 		case glfw.KeyH:
 			ctx.QueueCommand(DRAW_TOGGLE_VERBOSE)
 		case glfw.KeyV:
-			o.SpawnVolume(ctx.cam.Pos)
+			o.QueueCommand(orrery.CommandSpawnVolume{ctx.cam.Pos})
 		case glfw.KeyB:
-			o.SpawnVolume(vector.V3{})
+			o.QueueCommand(orrery.CommandSpawnVolume{vector.V3{}})
 		case glfw.KeyN:
-			o.SpawnPlanet(vector.V3{})
+			o.QueueCommand(orrery.CommandSpawnPlanet{vector.V3{}})
 		case glfw.KeySpace:
 			ctx.cam.QueueCommand(cameraCommandDrop{})
 		case glfw.KeyP:
-			panic("user requested panic")
+			o.QueueCommand(orrery.CommandPause{})
 		default:
 			log.Printf(`key: key:%v s:%v a:%v m:%v`, key, scancode, action, mods)
 		}
@@ -55,7 +55,7 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 			return
 		}
 		if button == 0 {
-			o.SpawnPlanet(ctx.cam.Pos)
+			o.QueueCommand(orrery.CommandSpawnPlanet{ctx.cam.Pos})
 		} else {
 			log.Printf(`mouse btn: button:%v action:%v mod:%v`, button, action, mod)
 		}

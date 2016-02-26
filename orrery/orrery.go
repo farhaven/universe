@@ -22,12 +22,22 @@ type Planet struct {
 	L sync.Mutex
 }
 
+type command interface{}
+type CommandSpawnPlanet struct {
+	Pos vector.V3
+}
+type CommandSpawnVolume struct {
+	Pos vector.V3
+}
+type CommandPause struct{}
 type Orrery struct {
 	planets     []*Planet
 	trailLength int
 	q           chan bool
 	l           sync.Mutex
+	c           chan command
 	looptime    time.Duration
+	Paused bool
 }
 
 func (o *Orrery) Planets() []*Planet {
@@ -189,6 +199,33 @@ func (p *Planet) interactGravity(px *Planet) {
 
 func (o *Orrery) loop() {
 	for {
+		select {
+		case c := <-o.c:
+			switch c := c.(type) {
+			case CommandSpawnPlanet:
+				o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 5, Pos: c.Pos})
+			case CommandSpawnVolume:
+				rn := func(r float64) float64 {
+					return (rand.Float64() - 0.5) * r
+				}
+
+				for i := 0; i < 10; i++ {
+					px := vector.V3{c.Pos.X + rn(100), c.Pos.Y + rn(100), c.Pos.Z + rn(100)}
+					o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 2, Pos: px})
+				}
+			case CommandPause:
+				o.Paused = !o.Paused
+			default:
+				panic(fmt.Sprintf(`unknown orrery command: %T %v`, c, c))
+			}
+		default:
+		}
+
+		if o.Paused {
+			time.Sleep(o.looptime)
+			continue
+		}
+
 		t_start := time.Now()
 		o.l.Lock()
 
@@ -238,25 +275,8 @@ func (o *Orrery) loop() {
 	}
 }
 
-func (o *Orrery) SpawnPlanet(p vector.V3) {
-	o.l.Lock()
-	defer o.l.Unlock()
-
-	o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 5, Pos: p})
-}
-
-func (o *Orrery) SpawnVolume(p vector.V3) {
-	o.l.Lock()
-	defer o.l.Unlock()
-
-	rn := func(r float64) float64 {
-		return (rand.Float64() - 0.5) * r
-	}
-
-	for i := 0; i < 10; i++ {
-		px := vector.V3{p.X + rn(100), p.Y + rn(100), p.Z + rn(100)}
-		o.planets = append(o.planets, &Planet{T: 0, R: 1.0, M: 2, Pos: px})
-	}
+func (o *Orrery) QueueCommand(c command) {
+	o.c <- c
 }
 
 func New() *Orrery {
@@ -269,6 +289,7 @@ func New() *Orrery {
 		looptime:    5 * time.Millisecond,
 
 		q: make(chan bool),
+		c: make(chan command, 20),
 	}
 
 	go o.loop()
