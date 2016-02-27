@@ -86,7 +86,13 @@ func (p *Particle) applyForce(f vector.V3, s float64) {
 	p.Vel = p.Vel.Add(f.Scaled(s / p.M))
 }
 
-func (p *Particle) collide(px *Particle) {
+type collision int
+const (
+	TOTAL collision = iota
+	PARTIAL
+	NONE
+)
+func (p *Particle) collide(px *Particle) collision {
 	if p == px {
 		panic(`can't collide with myself!`)
 	}
@@ -103,11 +109,7 @@ func (p *Particle) collide(px *Particle) {
 
 	d := p.Pos.Distance(px.Pos)
 	if d > p.R+px.R {
-		return
-	}
-	if d < math.Max(p.R, px.R) {
-		/* XXX: Merge particles */
-		return
+		return NONE
 	}
 
 	CR := 0.7
@@ -123,6 +125,12 @@ func (p *Particle) collide(px *Particle) {
 
 	p.T += (a1 * (1 - CR)) / p.M
 	px.T += (a2 * (1 - CR)) / px.M
+
+	if d < math.Max(p.R, px.R) {
+		return TOTAL
+	}
+
+	return PARTIAL
 }
 
 func (p *Particle) interactGravity(px *Particle) {
@@ -223,10 +231,43 @@ func (o *Orrery) loop() {
 		}
 
 		// Check for collisions
-		for i, p := range o.particles {
-			for _, px := range o.particles[i+1:] {
-				p.collide(px)
+		garbage := make(map[*Particle]bool)
+		for i := 0; i < len(o.particles); i++ {
+			p := o.particles[i]
+			if garbage[p] {
+				continue
 			}
+			for _, px := range o.particles[i+1:] {
+				if garbage[px] {
+					continue
+				}
+				if p.collide(px) == TOTAL {
+					// Merge p and px
+					posn := p.Pos.Add(p.Pos.Sub(px.Pos).Scaled(1.0/2))
+					// TODO: make scaling depend on incidence angle between velocity vectors
+					veln := p.Vel.Add(px.Vel).Scaled(2.0/3)
+					mn := p.M + px.M
+					// TODO: calculate new average temperature from old masses and new mass
+					o.particles = append(o.particles, newParticle(mn, posn, veln))
+					// Marg p and px for garbage collection
+					garbage[p] = true
+					garbage[px] = true
+					// Restart outer loop to re-check for new collisions
+					// XXX: restarting may add additional velocity for new collisions.
+					i = 0
+					break
+				}
+			}
+		}
+
+		if len(garbage) > 0 {
+			nl := []*Particle{}
+			for _, p := range o.particles {
+				if !garbage[p] {
+					nl = append(nl, p)
+				}
+			}
+			o.particles = nl
 		}
 		o.l.Unlock()
 
