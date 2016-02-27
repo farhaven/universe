@@ -1,14 +1,14 @@
 package orrery
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
 	"math/rand"
+	"os"
 	"sync"
 	"time"
-	"encoding/json"
-	"os"
 
 	"../vector"
 )
@@ -92,11 +92,13 @@ func (p *Particle) applyForce(f vector.V3, s float64) {
 }
 
 type collision int
+
 const (
 	TOTAL collision = iota
 	PARTIAL
 	NONE
 )
+
 func (p *Particle) collide(px *Particle) collision {
 	if p == px {
 		panic(`can't collide with myself!`)
@@ -290,9 +292,9 @@ func (o *Orrery) loop() {
 				}
 				if p.collide(px) == TOTAL {
 					// Merge p and px
-					posn := p.Pos.Add(p.Pos.Sub(px.Pos).Scaled(1.0/2))
+					posn := p.Pos.Add(p.Pos.Sub(px.Pos).Scaled(1.0 / 2))
 					// TODO: make scaling depend on incidence angle between velocity vectors
-					veln := p.Vel.Add(px.Vel).Scaled(2.0/3)
+					veln := p.Vel.Add(px.Vel).Scaled(2.0 / 3)
 					mn := p.M + px.M
 					// TODO: calculate new average temperature from old masses and new mass
 					o.particles = append(o.particles, newParticle(mn, posn, veln))
