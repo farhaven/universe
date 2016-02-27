@@ -34,6 +34,12 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 			ctx.cam.QueueCommand(cameraCommandReset{})
 		case glfw.KeyP:
 			o.QueueCommand(orrery.CommandPause{})
+		case glfw.KeyJ:
+			if mods & glfw.ModShift != 0 {
+				o.QueueCommand(orrery.CommandStore{})
+			} else if mods == 0 {
+				o.QueueCommand(orrery.CommandLoad{})
+			}
 		default:
 			log.Printf(`key: key:%v s:%v a:%v m:%v`, key, scancode, action, mods)
 		}
