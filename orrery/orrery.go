@@ -169,9 +169,6 @@ func (o *Orrery) loop() {
 	   - https://en.wikipedia.org/wiki/Barnes%E2%80%93Hut_simulation
 	*/
 
-	mScale := 15.0
-	rScale := math.Pow(mScale, 1/3)
-
 	for {
 		t_start := time.Now()
 
@@ -179,8 +176,8 @@ func (o *Orrery) loop() {
 		case c := <-o.c:
 			switch c := c.(type) {
 			case CommandSpawnParticle:
-				m := rand.Float64() * mScale
-				o.particles = append(o.particles, &Particle{T: 0, R: m * rScale, M: m, Pos: c.Pos})
+				m := 2.0
+				o.particles = append(o.particles, newParticle(m, c.Pos, vector.V3{}))
 			case CommandSpawnVolume:
 				rn := func(r float64) float64 {
 					return (rand.Float64() - 0.5) * r
@@ -188,8 +185,8 @@ func (o *Orrery) loop() {
 
 				for i := 0; i < 10; i++ {
 					px := vector.V3{c.Pos.X + rn(300), c.Pos.Y + rn(300), c.Pos.Z + rn(300)}
-					m := rand.Float64() * mScale
-					o.particles = append(o.particles, &Particle{T: 0, R: m * rScale, M: m, Pos: px})
+					m := 2.0
+					o.particles = append(o.particles, newParticle(m, px, vector.V3{}))
 				}
 			case CommandPause:
 				o.Paused = !o.Paused
@@ -280,6 +277,13 @@ func (o *Orrery) loop() {
 
 func (o *Orrery) QueueCommand(c command) {
 	o.c <- c
+}
+
+func newParticle(mass float64, pos vector.V3, vel vector.V3) *Particle {
+	return &Particle{
+		T: 0, M: mass, R: math.Pow(mass, 1.0/3),
+		Vel: vel, Pos: pos,
+	}
 }
 
 func New() *Orrery {
