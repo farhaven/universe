@@ -2,10 +2,13 @@ package orrery
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"sync"
 	"time"
+	"encoding/json"
+	"os"
 
 	"../vector"
 )
@@ -30,6 +33,8 @@ type CommandSpawnVolume struct {
 	Pos vector.V3
 }
 type CommandPause struct{}
+type CommandLoad struct{}
+type CommandStore struct{}
 type Orrery struct {
 	particles   []*Particle
 	trailLength int
@@ -164,6 +169,47 @@ func (p *Particle) interactGravity(px *Particle) {
 	px.applyForce(v, -a)
 }
 
+func (o *Orrery) loadUniverse() {
+	fh, err := os.Open("universe.json")
+	if err != nil {
+		log.Printf(`can't open universe.json: %s`, err)
+		return
+	}
+	defer fh.Close()
+
+	d := json.NewDecoder(fh)
+
+	pl := []Particle{}
+	err = d.Decode(pl)
+	if err != nil {
+		log.Printf(`can't decode universe: %s`, err)
+		return
+	}
+
+	o.l.Lock()
+	o.particles = []*Particle{}
+	for _, p := range pl {
+		o.particles = append(o.particles, &p)
+	}
+	defer o.l.Unlock()
+}
+
+func (o *Orrery) storeUniverse() {
+	fh, err := os.Create("universe.json")
+	if err != nil {
+		log.Fatalf(`can't create universe.json: %s`, err)
+	}
+	defer fh.Close()
+
+	e := json.NewEncoder(fh)
+	o.l.Lock()
+	defer o.l.Unlock()
+	err = e.Encode(o.particles)
+	if err != nil {
+		log.Fatalf(`can't encode universe: %s`, err)
+	}
+}
+
 func (o *Orrery) loop() {
 	/* XXX: Use barnes-hut simulation for less processing time: O(n^2) -> O(n log n)
 	   - https://en.wikipedia.org/wiki/Barnes%E2%80%93Hut_simulation
@@ -190,6 +236,10 @@ func (o *Orrery) loop() {
 				}
 			case CommandPause:
 				o.Paused = !o.Paused
+			case CommandLoad:
+				o.loadUniverse()
+			case CommandStore:
+				o.storeUniverse()
 			default:
 				panic(fmt.Sprintf(`unknown orrery command: %T %v`, c, c))
 			}
