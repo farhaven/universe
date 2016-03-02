@@ -293,9 +293,8 @@ func (o *Orrery) loop() {
 				if p.collide(px) == TOTAL {
 					// Merge p and px
 					posn := p.Pos.Add(p.Pos.Sub(px.Pos).Scaled(1.0 / 2))
-					// TODO: make scaling depend on incidence angle between velocity vectors
-					veln := p.Vel.Add(px.Vel).Scaled(2.0 / 3)
 					mn := p.M + px.M
+					veln := p.Vel.Scaled(1/p.M).Add(px.Vel.Scaled(1/px.M)).Scaled(mn)
 					// TODO: calculate new average temperature from old masses and new mass
 					o.particles = append(o.particles, newParticle(mn, posn, veln))
 					// Marg p and px for garbage collection
