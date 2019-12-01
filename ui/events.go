@@ -29,7 +29,7 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 		case glfw.KeyB:
 			o.QueueCommand(orrery.CommandSpawnVolume{vector.V3{}})
 		case glfw.KeyN:
-			o.QueueCommand(orrery.CommandSpawnParticle{vector.V3{}})
+			o.QueueCommand(orrery.CommandSpawnParticle{Pos: vector.V3{}})
 		case glfw.KeySpace:
 			ctx.cam.QueueCommand(cameraCommandReset{})
 		case glfw.KeyP:
@@ -61,7 +61,7 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 			return
 		}
 		if button == 0 {
-			o.QueueCommand(orrery.CommandSpawnParticle{ctx.cam.Pos})
+			o.QueueCommand(orrery.CommandSpawnParticle{Pos: ctx.cam.Pos})
 		} else {
 			log.Printf(`mouse btn: button:%v action:%v mod:%v`, button, action, mod)
 		}

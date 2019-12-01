@@ -269,7 +269,7 @@ func (ctx *DrawContext) createHudTexture(o *orrery.Orrery, frametime time.Durati
 
 	bg := color.RGBA{0, 0, 0, 0}
 	fg := color.RGBA{0, 255, 255, 255}
-	img, err := ctx.txt.RenderMultiline(lines, 12.5, bg, fg)
+	img, err := ctx.txt.RenderMultiline(lines, 10.5, bg, fg)
 	if err != nil {
 		return 0, [2]int{0, 0}, err
 	}

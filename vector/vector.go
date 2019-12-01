@@ -10,16 +10,16 @@ type V3 struct {
 }
 
 func (v V3) String() string {
-	return fmt.Sprintf(`(%.2f, %.2f, %.2f)`, v.X, v.Y, v.Z)
+	return fmt.Sprintf(`(%.2f, %.2f, %.2f, mag: %.2f)`, v.X, v.Y, v.Z, v.Magnitude())
 }
 
 func (v V3) anyWeird() bool {
 	t := math.IsNaN(v.X) || math.IsNaN(v.Y) || math.IsNaN(v.Z)
 	t = t || math.IsInf(v.X, 0) || math.IsInf(v.Y, 0) || math.IsInf(v.Z, 0)
-	return t || math.IsInf(v.Length(), 0)
+	return t || math.IsInf(v.Magnitude(), 0)
 }
 
-func (v V3) Length() float64 {
+func (v V3) Magnitude() float64 {
 	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z)
 }
 func (v V3) Dot(o V3) float64 {
@@ -49,11 +49,11 @@ func (v V3) Normalized() V3 {
 	if v.anyWeird() {
 		panic(`Weird v`)
 	}
-	if v.Length() == 0 {
+	if v.Magnitude() == 0 {
 		/* Not strictly mathematically correct */
 		return v
 	}
-	return v.Scaled(1 / v.Length())
+	return v.Scaled(1 / v.Magnitude())
 }
 func (v V3) Sub(o V3) V3 {
 	if v.anyWeird() {
@@ -92,7 +92,7 @@ func (v V3) Distance(o V3) float64 {
 	if o.anyWeird() {
 		panic(`Weird o`)
 	}
-	return v.Sub(o).Length()
+	return v.Sub(o).Magnitude()
 }
 
 type Plane [2]V3 // Normal, Point on plane

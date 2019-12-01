@@ -28,6 +28,7 @@ type Particle struct {
 type command interface{}
 type CommandSpawnParticle struct {
 	Pos vector.V3
+	M float64
 }
 type CommandSpawnVolume struct {
 	Pos vector.V3
@@ -119,7 +120,7 @@ func (p *Particle) collide(px *Particle) collision {
 		return NONE
 	}
 
-	CR := 0.7
+	CR := 0.5
 
 	a1 := 2 * px.M / (p.M + px.M)
 	v1 := px.Vel.Sub(p.Vel)
@@ -156,11 +157,11 @@ func (p *Particle) interactGravity(px *Particle) {
 	}
 
 	// G := 6.67 * math.Pow(10, -11)
-	G := float64(0.05)
+	G := float64(0.5)
 
 	v := px.Pos.Sub(p.Pos)
 
-	d := math.Max(1, v.Length())
+	d := math.Max(1, v.Magnitude())
 
 	M := p.M + px.M
 	a := (G * M) / (d * d)
@@ -189,17 +190,19 @@ func (o *Orrery) loadUniverse() {
 	}
 
 	o.l.Lock()
+	defer o.l.Unlock()
 	o.particles = []*Particle{}
 	for _, p := range pl {
 		o.particles = append(o.particles, &p)
 	}
-	defer o.l.Unlock()
 }
 
 func (o *Orrery) storeUniverse() {
-	fh, err := os.Create("universe.json")
+	fname := "universe.json"
+
+	fh, err := os.Create(fname)
 	if err != nil {
-		log.Fatalf(`can't create universe.json: %s`, err)
+		log.Fatalf(`can't create %s: %s`, fname, err)
 	}
 	defer fh.Close()
 
@@ -210,6 +213,7 @@ func (o *Orrery) storeUniverse() {
 	if err != nil {
 		log.Fatalf(`can't encode universe: %s`, err)
 	}
+	log.Printf(`dumped universe to %s`, fname)
 }
 
 func (o *Orrery) loop() {
@@ -224,8 +228,10 @@ func (o *Orrery) loop() {
 		case c := <-o.c:
 			switch c := c.(type) {
 			case CommandSpawnParticle:
-				m := 2.0
-				o.particles = append(o.particles, newParticle(m, c.Pos, vector.V3{}))
+				if c.M == 0 {
+					c.M = 2
+				}
+				o.particles = append(o.particles, newParticle(c.M, c.Pos, vector.V3{}))
 			case CommandSpawnVolume:
 				rn := func(r float64) float64 {
 					return (rand.Float64() - 0.5) * r
@@ -291,6 +297,7 @@ func (o *Orrery) loop() {
 					continue
 				}
 				if p.collide(px) == TOTAL {
+					/*
 					// Merge p and px
 					posn := p.Pos.Add(p.Pos.Sub(px.Pos).Scaled(1.0 / 2))
 					mn := p.M + px.M
@@ -304,6 +311,7 @@ func (o *Orrery) loop() {
 					// XXX: restarting may add additional velocity for new collisions.
 					i = 0
 					break
+					*/
 				}
 			}
 		}
@@ -339,12 +347,18 @@ func newParticle(mass float64, pos vector.V3, vel vector.V3) *Particle {
 
 func New() *Orrery {
 	o := &Orrery{
-		particles:   []*Particle{},
+		Paused: true,
 		trailLength: 20,
 		looptime:    5 * time.Millisecond,
 
 		q: make(chan bool),
 		c: make(chan command, 20),
+/*
+		particles:   []*Particle{
+			newParticle(5.972*10e2, vector.V3{}, vector.V3{}),
+			newParticle(7.346*10e1, vector.V3{3.88*10e1, 0, 0}, vector.V3{0, 0.2, 0}),
+		},
+		*/
 	}
 
 	go o.loop()

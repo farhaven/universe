@@ -4,8 +4,8 @@ import "testing"
 
 func TestV3Normalize(t *testing.T) {
 	v := V3{1, 1, 1}.Normalized()
-	if v.Length() != 1 {
-		t.Errorf(`expected length 1, got %f`, v.Length())
+	if v.Magnitude() != 1 {
+		t.Errorf(`expected magnitude 1, got %f`, v.Magnitude())
 	}
 }
 
