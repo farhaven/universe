@@ -10,7 +10,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if err := gl.Init(); err != nil {
+	err := gl.Init()
+	if err != nil {
 		log.Fatalf(`can't init GL: %s`, err)
 	}
 	os.Exit(m.Run())
@@ -20,11 +21,13 @@ func TestSphereInFrustum(t *testing.T) {
 	c := NewCamera(1440, 900, -40, 40, 10)
 	c.Update()
 
-	if f := c.SphereInFrustum(vector.V3{0, 0, 0}, 30); f != INTERSECT {
+	f := c.SphereInFrustum(vector.V3{X: 0, Y: 0, Z: 0}, 30)
+	if f != INTERSECT {
 		t.Errorf(`expected INTERSECT, got %s`, f.String())
 	}
 
-	if f := c.SphereInFrustum(vector.V3{0, 0, -100}, 1); f != OUTSIDE {
+	f = c.SphereInFrustum(vector.V3{X: 0, Y: 0, Z: -100}, 1)
+	if f != OUTSIDE {
 		t.Errorf(`expected OUTSIDE, got %s`, f.String())
 	}
 }

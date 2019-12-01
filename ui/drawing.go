@@ -50,7 +50,7 @@ type DrawContext struct {
 func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 	txt, err := text.NewContext("font.ttf")
 	if err != nil {
-		log.Fatalf(`can't create text context: %s`)
+		log.Fatalf(`can't create text context: %s`, err)
 	}
 
 	c := make(chan DrawContext)
@@ -80,7 +80,7 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 		w.MakeContextCurrent()
 
 		if err := gl.Init(); err != nil {
-			log.Fatalln(`can't init GL: %s`, err)
+			log.Fatalf(`can't init GL: %s`, err)
 		}
 
 		gl.ClearColor(0.1, 0.1, 0.1, 0.1)

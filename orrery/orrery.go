@@ -56,7 +56,7 @@ func (o *Orrery) Particles() []*Particle {
 	return r
 }
 
-func (p Particle) String() string {
+func (p *Particle) String() string {
 	return fmt.Sprintf(`T: %0.2f R:%.2f, M:%.2f, Pos:%s, Vel:%s`, p.T, p.R, p.M, p.Pos, p.Vel)
 }
 
@@ -182,8 +182,8 @@ func (o *Orrery) loadUniverse() {
 
 	d := json.NewDecoder(fh)
 
-	pl := []Particle{}
-	err = d.Decode(pl)
+	pl := []*Particle{}
+	err = d.Decode(&pl)
 	if err != nil {
 		log.Printf(`can't decode universe: %s`, err)
 		return
@@ -193,7 +193,7 @@ func (o *Orrery) loadUniverse() {
 	defer o.l.Unlock()
 	o.particles = []*Particle{}
 	for _, p := range pl {
-		o.particles = append(o.particles, &p)
+		o.particles = append(o.particles, p)
 	}
 }
 
@@ -238,7 +238,11 @@ func (o *Orrery) loop() {
 				}
 
 				for i := 0; i < 10; i++ {
-					px := vector.V3{c.Pos.X + rn(300), c.Pos.Y + rn(300), c.Pos.Z + rn(300)}
+					px := vector.V3{
+						X: c.Pos.X + rn(300),
+						Y: c.Pos.Y + rn(300),
+						Z: c.Pos.Z + rn(300),
+					}
 					m := 2.0
 					o.particles = append(o.particles, newParticle(m, px, vector.V3{}))
 				}

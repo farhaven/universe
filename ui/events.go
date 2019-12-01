@@ -25,9 +25,9 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 		case glfw.KeyH:
 			ctx.QueueCommand(DRAW_TOGGLE_VERBOSE)
 		case glfw.KeyV:
-			o.QueueCommand(orrery.CommandSpawnVolume{ctx.cam.Pos})
+			o.QueueCommand(orrery.CommandSpawnVolume{Pos: ctx.cam.Pos})
 		case glfw.KeyB:
-			o.QueueCommand(orrery.CommandSpawnVolume{vector.V3{}})
+			o.QueueCommand(orrery.CommandSpawnVolume{Pos: vector.V3{}})
 		case glfw.KeyN:
 			o.QueueCommand(orrery.CommandSpawnParticle{Pos: vector.V3{}})
 		case glfw.KeySpace:

@@ -40,7 +40,7 @@ func NewCamera(width, height int, x, y, z float64) *Camera {
 	c := &Camera{
 		cmds:    make(chan cameraCommand, 20),
 		screenw: width, screenh: height,
-		Pos: vector.V3{x, y, z},
+		Pos: vector.V3{X: x, Y: y, Z: z},
 	}
 	c.frustum.zNear = 0.5
 	c.frustum.zFar = float64(width)
@@ -97,7 +97,7 @@ func (c *Camera) SphereInFrustum(p vector.V3, r float64) FrustumCheckResult {
 }
 
 func (c *Camera) lookAt(at vector.V3) {
-	up := vector.V3{0, 0, 1}
+	up := vector.V3{X: 0, Y: 0, Z: 1}
 
 	fw := at.Sub(c.Pos).Normalized()
 	side := fw.Cross(up).Normalized()
@@ -154,7 +154,7 @@ func (c *Camera) Update() {
 	vy := math.Sin(c.alpha)*10 + c.Pos.Y
 	vz := math.Sin(c.theta)*10 + c.Pos.Z
 
-	c.lookAt(vector.V3{vx, vy, vz})
+	c.lookAt(vector.V3{X: vx, Y: vy, Z: vz})
 
 	gl.MatrixMode(gl.PROJECTION)
 	gl.LoadIdentity()
