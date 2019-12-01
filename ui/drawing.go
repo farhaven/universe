@@ -10,9 +10,9 @@ import (
 	"time"
 	"unsafe"
 
-	"../orrery"
-	"../vector"
-	"./text"
+	"git.c3pb.de/farhaven/universe/orrery"
+	"git.c3pb.de/farhaven/universe/vector"
+	"git.c3pb.de/farhaven/universe/ui/text"
 
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"

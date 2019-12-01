@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"../orrery"
-	"../vector"
+	"git.c3pb.de/farhaven/universe/orrery"
+	"git.c3pb.de/farhaven/universe/vector"
 
 	"github.com/go-gl/glfw/v3.1/glfw"
 )

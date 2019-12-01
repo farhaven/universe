@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"../vector"
+	"git.c3pb.de/farhaven/universe/vector"
 )
 
 type Particle struct {

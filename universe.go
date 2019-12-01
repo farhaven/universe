@@ -5,8 +5,8 @@ import (
 	"os"
 	"runtime/pprof"
 
-	"./orrery"
-	"./ui"
+	"git.c3pb.de/farhaven/universe/orrery"
+	"git.c3pb.de/farhaven/universe/ui"
 )
 
 func main() {

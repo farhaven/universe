@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"./vector"
+	"git.c3pb.de/farhaven/universe/vector"
 	"github.com/go-gl/gl/v2.1/gl"
 	"log"
 	"os"
