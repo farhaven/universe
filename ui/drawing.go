@@ -11,8 +11,8 @@ import (
 	"unsafe"
 
 	"git.c3pb.de/farhaven/universe/orrery"
-	"git.c3pb.de/farhaven/universe/vector"
 	"git.c3pb.de/farhaven/universe/ui/text"
+	"git.c3pb.de/farhaven/universe/vector"
 
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -36,13 +36,13 @@ type DrawContext struct {
 	cam *Camera
 
 	wireframe bool
-	verbose bool
+	verbose   bool
 
 	txt      *text.Context
 	shutdown chan struct{}
 
 	spheresWireframe map[int]uint32
-	spheresSolid map[int]uint32
+	spheresSolid     map[int]uint32
 
 	listId uint32 // ID of the next free call list
 }
@@ -89,15 +89,15 @@ func NewDrawContext(width, height int, o *orrery.Orrery) DrawContext {
 		cam := NewCamera(width, height, -40, 40, 10)
 		ctx := DrawContext{
 			width: width, height: height,
-			win:       w,
-			cmd:       make(chan DrawCommand, 1),
-			wireframe: true,
-			verbose: true,
-			cam:       cam,
-			txt:       txt,
-			shutdown:  make(chan struct{}),
+			win:              w,
+			cmd:              make(chan DrawCommand, 1),
+			wireframe:        true,
+			verbose:          true,
+			cam:              cam,
+			txt:              txt,
+			shutdown:         make(chan struct{}),
 			spheresWireframe: make(map[int]uint32),
-			spheresSolid: make(map[int]uint32),
+			spheresSolid:     make(map[int]uint32),
 		}
 		c <- ctx
 
@@ -335,7 +335,7 @@ func (ctx *DrawContext) drawScreen(o *orrery.Orrery) {
 	frames_over_deadline := 0
 
 	defer func() {
-		log.Printf(`average frame time: %v, #sample: %d`, frametimes / time.Duration(nsamples), nsamples)
+		log.Printf(`average frame time: %v, #sample: %d`, frametimes/time.Duration(nsamples), nsamples)
 		log.Printf(`slowest frame: %v, # of frames over %v: %d`, slowest_frame, frametime, frames_over_deadline)
 	}()
 

@@ -35,7 +35,7 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 		case glfw.KeyP:
 			o.QueueCommand(orrery.CommandPause{})
 		case glfw.KeyJ:
-			if mods & glfw.ModShift != 0 {
+			if mods&glfw.ModShift != 0 {
 				o.QueueCommand(orrery.CommandStore{})
 			} else if mods == 0 {
 				o.QueueCommand(orrery.CommandLoad{})
@@ -54,7 +54,7 @@ func (ctx *DrawContext) EventLoop(o *orrery.Orrery, shutdown chan struct{}) {
 		cursorx, cursory = xpos, ypos
 	})
 	ctx.win.SetScrollCallback(func(w *glfw.Window, xoff float64, yoff float64) {
-		ctx.cam.QueueCommand(cameraCommandMove{0, int32(-yoff*10)})
+		ctx.cam.QueueCommand(cameraCommandMove{0, int32(-yoff * 10)})
 	})
 	ctx.win.SetMouseButtonCallback(func(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 		if action != glfw.Press {

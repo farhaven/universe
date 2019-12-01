@@ -13,7 +13,7 @@ import (
 )
 
 type Context struct {
-	ft *freetype.Context
+	ft  *freetype.Context
 	fnt *truetype.Font
 }
 

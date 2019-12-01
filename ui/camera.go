@@ -119,8 +119,8 @@ func (c *Camera) lookAt(at vector.V3) {
 	fc := c.Pos.Sub(fw.Scaled(-c.frustum.zFar))
 
 	planes := []vector.Plane{
-		vector.Plane{fw, nc},            // NEARP
-		vector.Plane{fw.Scaled(-1), fc}, // FARP
+		{fw, nc},            // NEARP
+		{fw.Scaled(-1), fc}, // FARP
 	}
 
 	nh, nw := c.frustum.nearH, c.frustum.nearW

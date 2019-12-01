@@ -28,7 +28,7 @@ type Particle struct {
 type command interface{}
 type CommandSpawnParticle struct {
 	Pos vector.V3
-	M float64
+	M   float64
 }
 type CommandSpawnVolume struct {
 	Pos vector.V3
@@ -298,19 +298,19 @@ func (o *Orrery) loop() {
 				}
 				if p.collide(px) == TOTAL {
 					/*
-					// Merge p and px
-					posn := p.Pos.Add(p.Pos.Sub(px.Pos).Scaled(1.0 / 2))
-					mn := p.M + px.M
-					veln := p.Vel.Scaled(1/p.M).Add(px.Vel.Scaled(1/px.M)).Scaled(mn)
-					// TODO: calculate new average temperature from old masses and new mass
-					o.particles = append(o.particles, newParticle(mn, posn, veln))
-					// Marg p and px for garbage collection
-					garbage[p] = true
-					garbage[px] = true
-					// Restart outer loop to re-check for new collisions
-					// XXX: restarting may add additional velocity for new collisions.
-					i = 0
-					break
+						// Merge p and px
+						posn := p.Pos.Add(p.Pos.Sub(px.Pos).Scaled(1.0 / 2))
+						mn := p.M + px.M
+						veln := p.Vel.Scaled(1/p.M).Add(px.Vel.Scaled(1/px.M)).Scaled(mn)
+						// TODO: calculate new average temperature from old masses and new mass
+						o.particles = append(o.particles, newParticle(mn, posn, veln))
+						// Marg p and px for garbage collection
+						garbage[p] = true
+						garbage[px] = true
+						// Restart outer loop to re-check for new collisions
+						// XXX: restarting may add additional velocity for new collisions.
+						i = 0
+						break
 					*/
 				}
 			}
@@ -347,17 +347,17 @@ func newParticle(mass float64, pos vector.V3, vel vector.V3) *Particle {
 
 func New() *Orrery {
 	o := &Orrery{
-		Paused: true,
+		Paused:      true,
 		trailLength: 20,
 		looptime:    5 * time.Millisecond,
 
 		q: make(chan bool),
 		c: make(chan command, 20),
-/*
-		particles:   []*Particle{
-			newParticle(5.972*10e2, vector.V3{}, vector.V3{}),
-			newParticle(7.346*10e1, vector.V3{3.88*10e1, 0, 0}, vector.V3{0, 0.2, 0}),
-		},
+		/*
+			particles:   []*Particle{
+				newParticle(5.972*10e2, vector.V3{}, vector.V3{}),
+				newParticle(7.346*10e1, vector.V3{3.88*10e1, 0, 0}, vector.V3{0, 0.2, 0}),
+			},
 		*/
 	}
 

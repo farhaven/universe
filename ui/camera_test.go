@@ -1,11 +1,12 @@
 package ui
 
 import (
-	"git.c3pb.de/farhaven/universe/vector"
-	"github.com/go-gl/gl/v2.1/gl"
 	"log"
 	"os"
 	"testing"
+
+	"git.c3pb.de/farhaven/universe/vector"
+	"github.com/go-gl/gl/v2.1/gl"
 )
 
 func TestMain(m *testing.M) {
